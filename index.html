@@ -2001,7 +2001,7 @@ document.querySelectorAll('[data-fut]').forEach(b=>b.addEventListener('click',()
     if(x.includes("declined")||x.includes("recus")) return "Declined";
     return s||"New Lead";
   }
-  function getClients(){ return Array.isArray(window.STATE?.clients) ? window.STATE.clients : []; }
+  function getClients(){ return Array.isArray(STATE?.clients) ? STATE.clients : []; }
   function premium(c){ return Number(c.premioMensal||c.monthly_premium||0)*12; }
   function commission(c){ return Number(c.comissao||c.commission_amount||0) || Number(c.premioMensal||0)*9*(Number(c.comissaoPct||100)/100); }
   function fmt(n){return new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}).format(Number(n)||0)}
@@ -2072,11 +2072,11 @@ document.querySelectorAll('[data-fut]').forEach(b=>b.addEventListener('click',()
   function renderAllV9(){renderOverview();renderPipeline();renderCarriers();renderPolicies();renderCommissions();renderActivities();}
 
   function seedDemo(){
-    if(!window.STATE) return;
+    if(typeof STATE==='undefined'||!STATE) return;
     if(getClients().length){ alert("A base já possui clientes. Os 30 clientes demo não foram adicionados para evitar duplicação."); return; }
-    const agent=(window.STATE.agents||[])[0]||{};
+    const agent=(STATE.agents||[])[0]||{};
     const today=new Date();
-    window.STATE.clients=demoClients.map((d,i)=>{
+    STATE.clients=demoClients.map((d,i)=>{
       const dt=new Date(today);dt.setDate(today.getDate()-(i%14));
       const nx=new Date(today);nx.setDate(today.getDate()+((i%9)-3));
       return {id:"demo_"+String(i+1).padStart(2,"0"),nome:d[0],cidade:d[1],estado:d[2],telefone:d[3],
