@@ -1823,7 +1823,11 @@ document.querySelectorAll('[data-fut]').forEach(b=>b.addEventListener('click',()
 
 (async function init(){
   await loadState();
-  await showLogin();
+  const sess = await loadSession();
+  let valid = null;
+  if(sess && sess.role==='admin') valid = sess;
+  else if(sess && sess.role==='agent' && STATE.agents.some(a=>a.nome===sess.nome)) valid = sess;
+  if(valid) enterApp(valid); else await showLogin();
 })();
 </script>
 
