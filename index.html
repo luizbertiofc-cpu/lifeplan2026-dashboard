@@ -703,6 +703,7 @@ input::placeholder,textarea::placeholder{color:#5e7893!important;}
 
 <div class="topbar">
   <select id="filterAgent"></select>
+  <span id="agentBadge" class="session-chip" style="display:none;"><span class="role-dot"></span><span id="agentBadgeName">—</span></span>
   <select id="filterMonth"></select>
   <span id="dbStatusChip" class="session-chip" style="cursor:default;" title=""><span class="role-dot" id="dbStatusDot" style="background:#a8442e;"></span><span id="dbStatusLabel">Somente local</span></span>
   <div class="session-chip"><span class="role-dot"></span><span id="sessionLabel">—</span><button id="btnCalc" title="Calculadora de comissão">🧮</button><button id="btnProfile" style="display:none;">Meu Perfil</button><button id="btnLogout">Sair</button></div>
@@ -1292,11 +1293,15 @@ function populateFilters(){
   const agentSel = document.getElementById('filterAgent');
   const prevAgent = agentSel.value;
   fillSelect(agentSel, STATE.agents.map(a=>a.nome), 'Agente: Todos / All');
+  const agentBadge = document.getElementById('agentBadge');
   if(SESSION.role==='agent'){
     agentSel.value = SESSION.nome;
-    agentSel.disabled = true;
+    agentSel.style.display = 'none';
+    if(agentBadge){ agentBadge.style.display = ''; document.getElementById('agentBadgeName').textContent = SESSION.nome; }
   } else {
+    agentSel.style.display = '';
     agentSel.disabled = false;
+    if(agentBadge) agentBadge.style.display = 'none';
     if(prevAgent && Array.from(agentSel.options).some(o=>o.value===prevAgent)) agentSel.value = prevAgent;
   }
 
@@ -1305,7 +1310,7 @@ function populateFilters(){
     if(c.dataContato) months.add(monthKey(c.dataContato));
     if(c.dataEmissao) months.add(monthKey(c.dataEmissao));
   });
-  const policyAgentSel=document.getElementById('policyAgentFilter'); if(policyAgentSel){ const pv=policyAgentSel.value; fillSelect(policyAgentSel, STATE.agents.map(a=>a.nome), 'Agente: Todos / All'); if(Array.from(policyAgentSel.options).some(o=>o.value===pv)) policyAgentSel.value=pv; }
+  const policyAgentSel=document.getElementById('policyAgentFilter'); if(policyAgentSel){ const pv=policyAgentSel.value; fillSelect(policyAgentSel, STATE.agents.map(a=>a.nome), 'Agente: Todos / All'); if(SESSION.role==='agent'){ policyAgentSel.value=SESSION.nome; policyAgentSel.disabled=true; } else { policyAgentSel.disabled=false; if(Array.from(policyAgentSel.options).some(o=>o.value===pv)) policyAgentSel.value=pv; } }
   const monthSel = document.getElementById('filterMonth');
   const prevVal = monthSel.value;
   const sorted = Array.from(months).sort();
@@ -1485,7 +1490,8 @@ async function addCompTableRow(){
 function renderAgentGoalGrid(){
   const grid = document.getElementById('agentGoalGrid');
   grid.innerHTML = '';
-  STATE.agents.forEach(a=>{
+  const visibleAgents = SESSION.role==='agent' ? STATE.agents.filter(a=>a.nome===SESSION.nome) : STATE.agents;
+  visibleAgents.forEach(a=>{
     const list = STATE.clients.filter(c=>c.agente===a.nome);
     const m = metricsFor(list);
     const goalTotal = (Number(a.metaClientes)||0)+(Number(a.metaApolices)||0)+(Number(a.metaPremio)||0)+(Number(a.metaComissao)||0);
@@ -1499,7 +1505,8 @@ function renderAgentGoalGrid(){
   });
 }
 function renderCommissionChart(){
-  const items = STATE.agents.map(a=>{
+  const visibleAgents = SESSION.role==='agent' ? STATE.agents.filter(a=>a.nome===SESSION.nome) : STATE.agents;
+  const items = visibleAgents.map(a=>{
     const total = STATE.clients.filter(c=>c.agente===a.nome).reduce((s,c)=>s+(Number(c.comissao)||0),0);
     return {label:a.nome.split(' ')[0], value: total};
   });
@@ -1509,7 +1516,8 @@ function renderAgents(){
   const tbody = document.getElementById('agentBody');
   tbody.innerHTML='';
   const isAdmin = SESSION.role==='admin';
-  STATE.agents.forEach(a=>{
+  const visibleAgents = isAdmin ? STATE.agents : STATE.agents.filter(a=>a.nome===SESSION.nome);
+  visibleAgents.forEach(a=>{
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><strong>${a.nome}</strong></td>
@@ -1592,7 +1600,7 @@ function renderCommandCenter(){
   renderCommandRanking(); renderCommandFollowups(); renderCommandAchievements(); renderCommandActivity(); renderCommandBottom();
 }
 function renderCommandRanking(){
-  const month=document.getElementById('filterMonth').value; const rows=STATE.agents.filter(a=>a.ativo).map(a=>{const own=STATE.clients.filter(c=>c.agente===a.nome && (!month || monthKey(c.dataContato)===month || monthKey(c.dataEmissao)===month));const m=metricsFor(own);const goal=(Number(a.metaPremio)||0)+(Number(a.metaComissao)||0);const pct=goal?((m.premium+m.comissao)/goal)*100:0;return {a,m,pct};}).sort((x,y)=>y.pct-x.pct);
+  const month=document.getElementById('filterMonth').value; const visibleAgents = SESSION.role==='agent' ? STATE.agents.filter(a=>a.ativo && a.nome===SESSION.nome) : STATE.agents.filter(a=>a.ativo); const rows=visibleAgents.map(a=>{const own=STATE.clients.filter(c=>c.agente===a.nome && (!month || monthKey(c.dataContato)===month || monthKey(c.dataEmissao)===month));const m=metricsFor(own);const goal=(Number(a.metaPremio)||0)+(Number(a.metaComissao)||0);const pct=goal?((m.premium+m.comissao)/goal)*100:0;return {a,m,pct};}).sort((x,y)=>y.pct-x.pct);
   document.getElementById('ccTopRanking').innerHTML=rows.slice(0,5).map((r,i)=>`<div class="cc-rank-row"><span class="medal">${i+1}</span><span class="${selectedAgentName()===r.a.nome?'me':''}">${r.a.nome}</span><span>${fmtMoney(r.m.premium)}</span><span>${r.m.apolices}</span><span>${fmtMoney(r.m.comissao)}</span></div>`).join('')||'<div class="empty">Nenhum agente.</div>';
 }
 const FINAL_STATUSES=['Issued / Emitida','Lost / Perdido','Not Interested / Não Interessado','Not Qualified / Não Qualificado','Declined / Recusado'];
@@ -1606,7 +1614,7 @@ function renderCommandActivity(){const list=getFilteredClients().slice().sort((a
 function renderCommandBottom(){const pct=(v,t)=>t?Math.min(100,Math.round(v/t*100)):0;const name=selectedAgentName(), rows=STATE.agents.filter(a=>a.ativo).map(a=>{const m=metricsFor(STATE.clients.filter(c=>c.agente===a.nome));return {nome:a.nome,m};}).sort((a,b)=>b.m.comissao-a.m.comissao);const pos=name?rows.findIndex(x=>x.nome===name)+1:0;document.getElementById('ccMyRank').textContent=pos?'#'+pos:'—';document.getElementById('ccRankAgents').textContent=`de ${rows.length} agentes`;const leader=rows[0];const me=pos?rows[pos-1]:null;document.getElementById('ccRankGap').textContent=me&&leader&&leader.nome!==me.nome?`Você está ${fmtMoney(Math.max(0,leader.m.premium-me.m.premium))} atrás do líder`:'Você está na liderança';setBar('ccRankTrack',rows.length?((rows.length-pos+1)/rows.length*100):0);const list=getFilteredClients(),m=metricsFor(list),a=selectedAgentObj(),g=goalsForSelection();const p=pct(m.premium,g.premium),pc=pct(m.comissao,g.comissao);document.getElementById('ccMonthPremium').textContent=fmtMoney(m.premium);document.getElementById('ccMonthPremiumGoal').textContent=fmtMoney(g.premium);document.getElementById('ccMonthPremiumPct').textContent=p+'%';setBar('ccMonthPremiumBar',p);document.getElementById('ccMonthCommission').textContent=fmtMoney(m.comissao);document.getElementById('ccMonthCommissionGoal').textContent=fmtMoney(g.comissao);document.getElementById('ccMonthCommissionPct').textContent=pc+'%';setBar('ccMonthCommissionBar',pc);document.getElementById('ccTargetHeadline').textContent=`VOCÊ ESTÁ ${p}% DA META!`;document.getElementById('ccTargetText').textContent=`Falta(m) ${fmtMoney(Math.max(0,g.premium-m.premium))} para bater a meta mensal.`}
 function renderFullFollowups(){const q=(document.getElementById('fuSearch')?.value||'').toLowerCase();const mode=document.getElementById('fuRange')?.value||'all';const x=followItems();let arr=mode==='all'?[...x.overdue,...x.today,...x.next]:x[mode]||[];arr=arr.filter(c=>!q||[c.nome,c.telefone,c.agente].some(v=>String(v||'').toLowerCase().includes(q)));const staleTxt=c=>{const sd=staleDays(c);return sd===Infinity?'nunca':sd+' dias'};document.getElementById('fullFollowBody').innerHTML=arr.map(c=>`<tr><td><strong>${c.nome}</strong></td><td>${c.proxContato||'—'}</td><td>${(c.status||'').split(' / ')[0]}</td><td>${c.agente||'—'}</td><td>${c.telefone||'—'}</td><td>${staleTxt(c)}</td><td><button class="btn secondary small" onclick="openClientModal('${c.id}')">Abrir</button></td></tr>`).join('')||'<tr><td colspan="7">Nenhum follow-up encontrado.</td></tr>'}
 function renderPolicies(){const q=(document.getElementById('policySearch')?.value||'').toLowerCase();const af=document.getElementById('policyAgentFilter')?.value||'';const arr=STATE.clients.filter(c=>c.status==='Issued / Emitida'&&(!af||c.agente===af)&&(!q||[c.nome,c.numeroApolice,c.companhia,c.agente].some(v=>String(v||'').toLowerCase().includes(q))));document.getElementById('policyBody').innerHTML=arr.map(c=>`<tr><td><strong>${c.nome}</strong></td><td>${c.numeroApolice||'—'}</td><td>${c.companhia||'—'}</td><td>${(c.tipoSeguro||'').split(' / ')[0]}</td><td>${fmtMoney(c.coberturaValor)}</td><td>${fmtMoney(c.premioMensal)}</td><td>${fmtMoney(c.comissao)}</td><td>${c.dataEmissao||'—'}</td><td>${c.agente||'—'}</td></tr>`).join('')||'<tr><td colspan="9">Nenhuma apólice emitida.</td></tr>'}
-function renderReports(){const list=getFilteredClients(),m=metricsFor(list),leads=list.length,issued=m.apolices,conv=leads?Math.round(issued/leads*100):0;const g=goalsForSelection(),weekGoal=(g.comissao||0)/4.33,cut=new Date();cut.setDate(cut.getDate()-7);const weekIssued=list.filter(c=>c.status==='Issued / Emitida'&&c.dataEmissao&&new Date(c.dataEmissao+'T00:00:00')>=cut),weekCom=weekIssued.reduce((s,c)=>s+(Number(c.comissao)||0),0),weekPct=weekGoal?Math.round(weekCom/weekGoal*100):0;const rw=document.getElementById('reportWeek');if(rw)rw.innerHTML=`<div class="report-big">${weekPct}%</div><div class="report-line"><span>Emitidas (7 dias)</span><b>${weekIssued.length}</b></div><div class="report-line"><span>Comissão da semana</span><b>${fmtMoney(weekCom)}</b></div><div class="report-line"><span>Meta semanal</span><b>${fmtMoney(Math.round(weekGoal))}</b></div>`;document.getElementById('reportSummary').innerHTML=`<div class="report-big">${fmtMoney(m.premium)}</div><div class="report-line"><span>Clientes</span><b>${m.clientes}</b></div><div class="report-line"><span>Apólices emitidas</span><b>${m.apolices}</b></div><div class="report-line"><span>Comissão</span><b>${fmtMoney(m.comissao)}</b></div>`;document.getElementById('reportConversion').innerHTML=`<div class="report-big">${conv}%</div><div class="report-line"><span>Leads / Clientes</span><b>${leads}</b></div><div class="report-line"><span>Emitidas</span><b>${issued}</b></div><div class="report-line"><span>Ticket médio premium</span><b>${fmtMoney(issued?m.premium/issued:0)}</b></div>`;const rows=STATE.agents.map(a=>({a,m:metricsFor(STATE.clients.filter(c=>c.agente===a.nome))})).sort((x,y)=>y.m.comissao-x.m.comissao);document.getElementById('reportAgents').innerHTML=rows.slice(0,8).map((r,i)=>`<div class="report-line"><span>#${i+1} ${r.a.nome}</span><b>${fmtMoney(r.m.comissao)}</b></div>`).join('')}
+function renderReports(){const list=getFilteredClients(),m=metricsFor(list),leads=list.length,issued=m.apolices,conv=leads?Math.round(issued/leads*100):0;const g=goalsForSelection(),weekGoal=(g.comissao||0)/4.33,cut=new Date();cut.setDate(cut.getDate()-7);const weekIssued=list.filter(c=>c.status==='Issued / Emitida'&&c.dataEmissao&&new Date(c.dataEmissao+'T00:00:00')>=cut),weekCom=weekIssued.reduce((s,c)=>s+(Number(c.comissao)||0),0),weekPct=weekGoal?Math.round(weekCom/weekGoal*100):0;const rw=document.getElementById('reportWeek');if(rw)rw.innerHTML=`<div class="report-big">${weekPct}%</div><div class="report-line"><span>Emitidas (7 dias)</span><b>${weekIssued.length}</b></div><div class="report-line"><span>Comissão da semana</span><b>${fmtMoney(weekCom)}</b></div><div class="report-line"><span>Meta semanal</span><b>${fmtMoney(Math.round(weekGoal))}</b></div>`;document.getElementById('reportSummary').innerHTML=`<div class="report-big">${fmtMoney(m.premium)}</div><div class="report-line"><span>Clientes</span><b>${m.clientes}</b></div><div class="report-line"><span>Apólices emitidas</span><b>${m.apolices}</b></div><div class="report-line"><span>Comissão</span><b>${fmtMoney(m.comissao)}</b></div>`;document.getElementById('reportConversion').innerHTML=`<div class="report-big">${conv}%</div><div class="report-line"><span>Leads / Clientes</span><b>${leads}</b></div><div class="report-line"><span>Emitidas</span><b>${issued}</b></div><div class="report-line"><span>Ticket médio premium</span><b>${fmtMoney(issued?m.premium/issued:0)}</b></div>`;const visibleReportAgents = SESSION.role==='agent' ? STATE.agents.filter(a=>a.nome===SESSION.nome) : STATE.agents;const rows=visibleReportAgents.map(a=>({a,m:metricsFor(STATE.clients.filter(c=>c.agente===a.nome))})).sort((x,y)=>y.m.comissao-x.m.comissao);document.getElementById('reportAgents').innerHTML=rows.slice(0,8).map((r,i)=>`<div class="report-line"><span>#${i+1} ${r.a.nome}</span><b>${fmtMoney(r.m.comissao)}</b></div>`).join('')}
 
 /* ---------- importar CSV ---------- */
 function parseCSV(text){
@@ -1679,7 +1687,8 @@ async function importCSVFile(file){
 function renderLeaderView(){
   const grid = document.getElementById('leaderGrid');
   if(!grid) return;
-  const rows = STATE.agents.filter(a=>a.ativo).map(a=>{
+  const visibleAgents = SESSION.role==='agent' ? STATE.agents.filter(a=>a.ativo && a.nome===SESSION.nome) : STATE.agents.filter(a=>a.ativo);
+  const rows = visibleAgents.map(a=>{
     const m = metricsFor(STATE.clients.filter(c=>c.agente===a.nome));
     const g = goalForAgent(a);
     const pc = g.comissao ? Math.min(100, Math.round(m.comissao/g.comissao*100)) : 0;
@@ -1718,6 +1727,10 @@ function renderAll(){
 
   document.getElementById('btnAddAgent').style.display = SESSION.role==='admin' ? '' : 'none';
   document.getElementById('btnProfile').style.display = SESSION.role==='agent' ? '' : 'none';
+  const leaderTab = document.querySelector('.tab-btn[data-tab="visaolider"]');
+  if(leaderTab) leaderTab.style.display = SESSION.role==='agent' ? 'none' : '';
+  const rankCard = document.querySelector('.cc-rank-position');
+  if(rankCard) rankCard.style.display = SESSION.role==='agent' ? 'none' : '';
   const demoBtn = document.getElementById('btnRemoveDemoClients');
   if(demoBtn){
     const hasDemo = STATE.clients.some(c=>String(c.id||'').startsWith('demo_'));
@@ -2231,7 +2244,7 @@ document.querySelectorAll('[data-fut]').forEach(b=>b.addEventListener('click',()
     if(x.includes("declined")||x.includes("recus")) return "Declined";
     return s||"New Lead";
   }
-  function getClients(){ return Array.isArray(STATE?.clients) ? STATE.clients : []; }
+  function getClients(){ const cs = Array.isArray(STATE?.clients) ? STATE.clients : []; return (typeof SESSION!=='undefined' && SESSION && SESSION.role==='agent') ? cs.filter(c=>c.agente===SESSION.nome) : cs; }
   function premium(c){ return Number(c.premioMensal||c.monthly_premium||0)*12; }
   function commission(c){ return Number(c.comissao||c.commission_amount||0) || Number(c.premioMensal||0)*9*(Number(c.comissaoPct||100)/100); }
   function fmt(n){return new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}).format(Number(n)||0)}
