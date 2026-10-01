@@ -302,6 +302,16 @@
     .topbar{justify-content:space-between;}
   }
 
+
+@media print{
+  #sidebar,.topbar,.sidebar-footer,.footer-note,.client-tools,button,.btn,.modal-bg{display:none!important;}
+  .main-content{margin:0!important;padding:8px!important;}
+  .view{display:none!important;}
+  #view-relatorios{display:block!important;}
+  body{background:#fff!important;color:#000!important;}
+  .card{background:#fff!important;border:1px solid #ccc!important;color:#000!important;box-shadow:none!important;}
+  .cc-title,.report-line,.report-big,.report-line b{color:#000!important;}
+}
 </style>
 
 <style id="lifeplan-blue-professional-theme">
@@ -682,6 +692,8 @@ input::placeholder,textarea::placeholder{color:#5e7893!important;}
     <button class="tab-btn" data-tab="apolices" data-icon="📄"><span class="ico">📄</span><span class="lbl">Apólices / Policies</span></button>
     <button class="tab-btn" data-tab="relatorios" data-icon="📈"><span class="ico">📈</span><span class="lbl">Relatórios / Reports</span></button>
     <button class="tab-btn" data-tab="metas" data-icon="🎯"><span class="ico">🎯</span><span class="lbl">Metas & Agentes</span></button>
+    <button class="tab-btn" data-tab="tabelacomissao" data-icon="💰"><span class="ico">💰</span><span class="lbl">Tabela de Comissão</span></button>
+    <button class="tab-btn" data-tab="visaolider" data-icon="👔"><span class="ico">👔</span><span class="lbl">Visão do Líder</span></button>
   </nav>
   <div class="sidebar-footer">LIFEPLAN2026<br>dados salvos automaticamente</div>
 </aside>
@@ -692,7 +704,7 @@ input::placeholder,textarea::placeholder{color:#5e7893!important;}
   <select id="filterAgent"></select>
   <select id="filterMonth"></select>
   <span id="dbStatusChip" class="session-chip" style="cursor:default;" title=""><span class="role-dot" id="dbStatusDot" style="background:#a8442e;"></span><span id="dbStatusLabel">Somente local</span></span>
-  <div class="session-chip"><span class="role-dot"></span><span id="sessionLabel">—</span><button id="btnProfile" style="display:none;">Meu Perfil</button><button id="btnLogout">Sair</button></div>
+  <div class="session-chip"><span class="role-dot"></span><span id="sessionLabel">—</span><button id="btnCalc" title="Calculadora de comissão">🧮</button><button id="btnProfile" style="display:none;">Meu Perfil</button><button id="btnLogout">Sair</button></div>
 </div>
 
 <!-- DASHBOARD -->
@@ -804,6 +816,8 @@ input::placeholder,textarea::placeholder{color:#5e7893!important;}
         <input class="client-search" id="clientSearch" type="search" placeholder="Buscar nome, telefone, cidade ou apólice...">
         <select id="clientStatusFilter"></select>
         <button class="btn" id="btnAddClient">+ Novo cliente</button>
+        <input type="file" id="csvFileInput" accept=".csv" style="display:none;">
+        <button class="btn secondary" id="btnImportCsv" style="margin-left:8px;">📥 Importar CSV</button>
         <button class="btn secondary" id="btnRemoveDemoClients" style="margin-left:8px;">🧹 Remover clientes fictícios</button>
       </div>
     </div>
@@ -825,17 +839,25 @@ input::placeholder,textarea::placeholder{color:#5e7893!important;}
 
 <!-- METAS -->
 <div class="view" id="view-followups">
-  <div class="card"><div class="cc-title"><span>FOLLOW-UPS</span><em>/ ACOMPANHAMENTOS</em></div><div class="client-tools"><input class="client-search" id="fuSearch" type="search" placeholder="Buscar cliente..."><select id="fuRange"><option value="all">Todos</option><option value="overdue">Atrasados</option><option value="today">Hoje</option><option value="next">Próximos 7 dias</option></select></div><div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Data</th><th>Status</th><th>Agente</th><th>Telefone</th><th>Ação</th></tr></thead><tbody id="fullFollowBody"></tbody></table></div></div>
+  <div class="card"><div class="cc-title"><span>FOLLOW-UPS</span><em>/ ACOMPANHAMENTOS</em></div><div class="client-tools"><input class="client-search" id="fuSearch" type="search" placeholder="Buscar cliente..."><select id="fuRange"><option value="all">Todos</option><option value="overdue">Atrasados</option><option value="today">Hoje</option><option value="next">Próximos 7 dias</option><option value="stale">Sem contato há 7+ dias</option></select></div><div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Data</th><th>Status</th><th>Agente</th><th>Telefone</th><th>Parado há</th><th>Ação</th></tr></thead><tbody id="fullFollowBody"></tbody></table></div></div>
 </div>
 <div class="view" id="view-apolices">
   <div class="card"><div class="cc-title"><span>APÓLICES EMITIDAS</span><em>/ POLICIES ISSUED</em></div><div class="client-tools"><input class="client-search" id="policySearch" type="search" placeholder="Buscar cliente ou apólice..."><select id="policyAgentFilter"></select></div><div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Apólice</th><th>Companhia</th><th>Tipo</th><th>Cobertura</th><th>Prêmio</th><th>Comissão</th><th>Emissão</th><th>Agente</th></tr></thead><tbody id="policyBody"></tbody></table></div></div>
 </div>
 <div class="view" id="view-relatorios">
+  <div class="toolbar" style="margin-bottom:12px;">
+    <div>
+      <h2>Relatórios</h2>
+      <div class="sub">Resumo da produção, conversão, ranking e semana.</div>
+    </div>
+    <button class="btn secondary" id="btnPrintReport">🖨️ Imprimir / PDF</button>
+  </div>
   <div class="cc-grid cc-report-grid">
     <div class="card"><div class="cc-title"><span>RESUMO DA PRODUÇÃO</span><em>/ PRODUCTION SUMMARY</em></div><div id="reportSummary"></div></div>
     <div class="card"><div class="cc-title"><span>CONVERSÃO</span><em>/ CONVERSION</em></div><div id="reportConversion"></div></div>
     <div class="card"><div class="cc-title"><span>TOP AGENTES</span><em>/ AGENT LEADERBOARD</em></div><div id="reportAgents"></div></div>
   </div>
+  <div class="card" style="margin-top:12px;"><div class="cc-title"><span>RESUMO DA SEMANA</span><em>/ WEEK SUMMARY</em></div><div id="reportWeek"></div></div>
 </div>
 <div class="view" id="view-metas">
   <div class="card" style="margin-bottom:16px;">
@@ -875,6 +897,46 @@ input::placeholder,textarea::placeholder{color:#5e7893!important;}
     </div>
   </div>
 </div>
+<div class="view" id="view-tabelacomissao">
+  <div class="card" style="margin-bottom:16px;">
+    <div class="toolbar">
+      <div>
+        <h2>💰 Tabela de Comissionamento</h2>
+        <div class="sub">% da companhia por produto — usado como referência na calculadora e no cadastro de clientes.</div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Companhia</th><th>Produto</th><th class="num">% Companhia</th><th></th></tr></thead>
+        <tbody id="compTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Adicionar linha</h2>
+    <div class="form-grid" style="max-width:640px;">
+      <div><label>Companhia</label><input type="text" id="ct_companhia" placeholder="Ex.: Transamerica"></div>
+      <div><label>Produto</label><select id="ct_produto" class="cell"><option>Term</option><option>IUL</option><option>Whole Life</option><option>Final Expense</option><option>Outro</option></select></div>
+      <div><label>% da companhia</label><input type="number" id="ct_pct" min="0" max="200" placeholder="Ex.: 105"></div>
+    </div>
+    <div class="modal-actions" style="justify-content:flex-start;">
+      <button class="btn" id="ct_add">+ Adicionar</button>
+    </div>
+  </div>
+</div>
+<div class="view" id="view-visaolider">
+  <div class="card" style="margin-bottom:16px;">
+    <div class="toolbar">
+      <div>
+        <h2>👔 Visão do Líder</h2>
+        <div class="sub">Produção do time — todos os agentes ativos lado a lado.</div>
+      </div>
+    </div>
+    <div class="agent-goal-grid" id="leaderGrid"></div>
+  </div>
+</div>
+
+
 
 <div class="footer-note">LIFEPLAN2026 · dados salvos automaticamente neste navegador</div>
 
@@ -936,6 +998,23 @@ input::placeholder,textarea::placeholder{color:#5e7893!important;}
     <div class="modal-actions">
       <button class="btn secondary" id="af_cancel">Cancelar</button>
       <button class="btn" id="af_save">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="calcModalBg">
+  <div class="modal" style="max-width:440px;">
+    <h2>🧮 Calculadora de comissão</h2>
+    <div class="sub" style="margin-bottom:10px;">Prêmio mensal × meses × % companhia × sua parte</div>
+    <div class="form-grid">
+      <div><label>Prêmio mensal (USD)</label><input type="number" id="calc_premio" value="100" min="0"></div>
+      <div><label>% da companhia</label><input type="number" id="calc_pct" value="105" min="0" max="200"></div>
+      <div><label>Meses de adiantamento</label><input type="number" id="calc_meses" value="9" min="1" max="12"></div>
+      <div><label>Sua parte (%)</label><input type="number" id="calc_parte" value="50" min="0" max="100"></div>
+      <div class="full"><label>Sua comissão</label><input type="text" id="calc_result" readonly style="font-size:20px;font-weight:800;color:#0b5ed7;"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" id="calc_close">Fechar</button>
     </div>
   </div>
 </div>
@@ -1073,6 +1152,14 @@ async function loadState(){
     if(!a.usuario){ a.usuario = slugUser(a.nome); migrated = true; }
     if(!a.senha){ a.senha = DEFAULT_PASSWORD; migrated = true; }
   });
+  if(!STATE.compTable){
+    STATE.compTable = [
+      {id:'ct1', companhia:'Mutual of Omaha', produto:'IUL', pct:95},
+      {id:'ct2', companhia:'Americo', produto:'IUL', pct:80},
+      {id:'ct3', companhia:'Transamerica', produto:'Term', pct:105},
+    ];
+    migrated = true;
+  }
   if(migrated) await saveState();
 }
 async function saveState(){
@@ -1350,6 +1437,7 @@ function renderClients(){
       <td class="num">${c.comissao?fmtMoney(c.comissao):'—'}</td>
       <td style="white-space:nowrap;">
         <button class="btn secondary small" data-edit="${c.id}">Editar</button>
+        ${c.telefone?`<a class="btn small" style="background:#25d366;border-color:#25d366;text-decoration:none;" target="_blank" href="https://wa.me/${String(c.telefone).replace(/\D/g,'')}" title="Conversar no WhatsApp">💬</a>`:''}
         <button class="btn danger small" data-del="${c.id}">Excluir</button>
       </td>`;
     tbody.appendChild(tr);
@@ -1362,6 +1450,30 @@ function renderClients(){
       renderAll();
     }
   }));
+}
+
+/* ---------- TABELA DE COMISSIONAMENTO ---------- */
+function renderCompTable(){
+  const tb = document.getElementById('compTableBody');
+  if(!tb) return;
+  const rows = STATE.compTable || [];
+  tb.innerHTML = rows.map(r=>`<tr><td><strong>${r.companhia||'—'}</strong></td><td>${r.produto||'—'}</td><td class="num">${r.pct}%</td><td style="white-space:nowrap;"><button class="btn danger small" data-ctdel="${r.id}">Excluir</button></td></tr>`).join('') || '<tr><td colspan="4">Nenhuma linha. Adicione abaixo.</td></tr>';
+  tb.querySelectorAll('[data-ctdel]').forEach(b=> b.addEventListener('click', async ()=>{
+    if(confirm('Excluir esta linha da tabela?')){
+      STATE.compTable = STATE.compTable.filter(x=>x.id!==b.dataset.ctdel);
+      await saveState(); renderCompTable();
+    }
+  }));
+}
+async function addCompTableRow(){
+  const companhia = document.getElementById('ct_companhia').value.trim();
+  const produto = document.getElementById('ct_produto').value;
+  const pct = Number(document.getElementById('ct_pct').value);
+  if(!companhia || !pct){ alert('Preencha companhia e %.'); return; }
+  if(!STATE.compTable) STATE.compTable = [];
+  STATE.compTable.push({id:'ct'+Date.now(), companhia, produto, pct});
+  document.getElementById('ct_companhia').value=''; document.getElementById('ct_pct').value='';
+  await saveState(); renderCompTable();
 }
 
 /* ---------- METAS & AGENTES ---------- */
@@ -1470,22 +1582,115 @@ function renderCommandCenter(){
   const overall=Math.round((pc+pp+ppr+pco)/4); document.getElementById('ccOverallPct').textContent=overall+'%'; document.getElementById('ccOverallRing').style.background=`conic-gradient(#1185ff ${overall*3.6}deg,#0d2b47 ${overall*3.6}deg 360deg)`;
   document.getElementById('ccGoalLines').innerHTML=[['Novos Clientes / New Clients',m.clientes,g.clientes,pc],['Apólices Emitidas / Policies Issued',m.apolices,g.apolices,pp],['Prêmio Total / Total Premium',fmtMoney(m.premium),fmtMoney(g.premium),ppr],['Comissão / Commission',fmtMoney(m.comissao),fmtMoney(g.comissao),pco]].map(r=>`<div class="cc-goal-line"><span>${r[0]}</span><b>${r[1]} / ${r[2]}</b><span class="pct">${r[3]}%</span></div>`).join('');
   document.getElementById('ccMotivationTitle').textContent=overall>=100?'META BATIDA! 🔥':overall>=75?'FALTA POUCO PARA BATER SUA META!':'MANTENHA O FOCO E A AÇÃO!';
-  document.getElementById('ccMotivationText').textContent=overall>=100?'Excelente produção. Agora vamos superar a meta.':`Você está ${overall}% da meta. Transforme follow-ups em aplicações.`;
+  const dailyGoal=Math.round((g.comissao||0)/30);
+  document.getElementById('ccMotivationText').textContent=(overall>=100?'Excelente produção. Agora vamos superar a meta.':`Você está ${overall}% da meta. Transforme follow-ups em aplicações.`)+` 🎯 Meta de hoje: ${fmtMoney(dailyGoal)} de comissão.`;
   renderCommandRanking(); renderCommandFollowups(); renderCommandAchievements(); renderCommandActivity(); renderCommandBottom();
 }
 function renderCommandRanking(){
   const month=document.getElementById('filterMonth').value; const rows=STATE.agents.filter(a=>a.ativo).map(a=>{const own=STATE.clients.filter(c=>c.agente===a.nome && (!month || monthKey(c.dataContato)===month || monthKey(c.dataEmissao)===month));const m=metricsFor(own);const goal=(Number(a.metaPremio)||0)+(Number(a.metaComissao)||0);const pct=goal?((m.premium+m.comissao)/goal)*100:0;return {a,m,pct};}).sort((x,y)=>y.pct-x.pct);
   document.getElementById('ccTopRanking').innerHTML=rows.slice(0,5).map((r,i)=>`<div class="cc-rank-row"><span class="medal">${i+1}</span><span class="${selectedAgentName()===r.a.nome?'me':''}">${r.a.nome}</span><span>${fmtMoney(r.m.premium)}</span><span>${r.m.apolices}</span><span>${fmtMoney(r.m.comissao)}</span></div>`).join('')||'<div class="empty">Nenhum agente.</div>';
 }
-function followItems(){const list=getFilteredClients().filter(c=>c.proxContato).sort((a,b)=>a.proxContato.localeCompare(b.proxContato));return {overdue:list.filter(c=>daysDiff(c.proxContato)<0),today:list.filter(c=>daysDiff(c.proxContato)===0),next:list.filter(c=>daysDiff(c.proxContato)>0&&daysDiff(c.proxContato)<=7)}}
+const FINAL_STATUSES=['Issued / Emitida','Lost / Perdido','Not Interested / Não Interessado','Not Qualified / Não Qualificado','Declined / Recusado'];
+const STALE_DAYS=7;
+function staleDays(c){ if(!c.dataContato) return Infinity; return -daysDiff(c.dataContato); }
+function followItems(){const list=getFilteredClients().filter(c=>c.proxContato).sort((a,b)=>a.proxContato.localeCompare(b.proxContato));const stale=getFilteredClients().filter(c=>!FINAL_STATUSES.includes(c.status)&&staleDays(c)>STALE_DAYS).sort((a,b)=>staleDays(b)-staleDays(a));return {overdue:list.filter(c=>daysDiff(c.proxContato)<0),today:list.filter(c=>daysDiff(c.proxContato)===0),next:list.filter(c=>daysDiff(c.proxContato)>0&&daysDiff(c.proxContato)<=7),stale}}
 let ccFollowMode='overdue';
 function renderCommandFollowups(){const x=followItems();document.getElementById('ccFuOverdue').textContent=x.overdue.length;document.getElementById('ccFuToday').textContent=x.today.length;document.getElementById('ccFuNext').textContent=x.next.length;const arr=x[ccFollowMode]||[];document.getElementById('ccFollowList').innerHTML=arr.slice(0,6).map(c=>`<div class="cc-list-item"><strong>${c.nome||'—'}</strong><span>${c.proxContato}</span><small>${ccFollowMode==='overdue'?'ATRASADO':ccFollowMode==='today'?'HOJE':'PRÓXIMO'}</small><button onclick="openClientModal('${c.id}')">Abrir</button></div>`).join('')||'<div class="empty">Nenhum follow-up nesta fila.</div>'}
 function renderCommandAchievements(){const list=getFilteredClients(),m=metricsFor(list);const badges=[];if(m.apolices>=5)badges.push(['🛡️','META DE APÓLICES','5+ apólices emitidas!','+500 pts']);if(m.premium>=20000)badges.push(['💵','PRÊMIO DE $20K','Produção mensal ultrapas­sada!','+300 pts']);if(m.clientes>=7)badges.push(['⭐','SEMANA PRODUTIVA','7 clientes cadastrados!','+200 pts']);if(!badges.length)badges.push(['🎯','PRÓXIMA CONQUISTA','Continue produzindo para desbloquear.','+100 pts']);document.getElementById('ccAchievements').innerHTML=badges.map(x=>`<div class="cc-achievement"><span class="cc-ach-icon">${x[0]}</span><div><strong>${x[1]}</strong><small>${x[2]}</small></div><span class="pts">${x[3]}</span></div>`).join('')}
 function renderCommandActivity(){const list=getFilteredClients().slice().sort((a,b)=>(b.dataEmissao||b.dataContato||'').localeCompare(a.dataEmissao||a.dataContato||''));const items=list.slice(0,5).map(c=>{let icon='👥',txt=`Novo cliente cadastrado: ${c.nome}`;if(c.status==='Issued / Emitida'){icon='🛡️';txt=`Nova apólice emitida para ${c.nome}`}else if(c.status==='Follow-up / Acompanhamento'){icon='🟠';txt=`${c.nome} virou Follow-up`}else if(c.status==='Quoted / Cotação'){icon='📄';txt=`Proposta enviada para ${c.nome}`};return [icon,txt,c.proxContato||c.dataContato||''];});document.getElementById('ccActivity').innerHTML=items.map(x=>`<div class="cc-activity-item"><span class="cc-ach-icon">${x[0]}</span><div><strong>${x[1]}</strong><small>${x[2]}</small></div></div>`).join('')||'<div class="empty">Sem atividade registrada.</div>'}
 function renderCommandBottom(){const pct=(v,t)=>t?Math.min(100,Math.round(v/t*100)):0;const name=selectedAgentName(), rows=STATE.agents.filter(a=>a.ativo).map(a=>{const m=metricsFor(STATE.clients.filter(c=>c.agente===a.nome));return {nome:a.nome,m};}).sort((a,b)=>b.m.comissao-a.m.comissao);const pos=name?rows.findIndex(x=>x.nome===name)+1:0;document.getElementById('ccMyRank').textContent=pos?'#'+pos:'—';document.getElementById('ccRankAgents').textContent=`de ${rows.length} agentes`;const leader=rows[0];const me=pos?rows[pos-1]:null;document.getElementById('ccRankGap').textContent=me&&leader&&leader.nome!==me.nome?`Você está ${fmtMoney(Math.max(0,leader.m.premium-me.m.premium))} atrás do líder`:'Você está na liderança';setBar('ccRankTrack',rows.length?((rows.length-pos+1)/rows.length*100):0);const list=getFilteredClients(),m=metricsFor(list),a=selectedAgentObj(),g=goalsForSelection();const p=pct(m.premium,g.premium),pc=pct(m.comissao,g.comissao);document.getElementById('ccMonthPremium').textContent=fmtMoney(m.premium);document.getElementById('ccMonthPremiumGoal').textContent=fmtMoney(g.premium);document.getElementById('ccMonthPremiumPct').textContent=p+'%';setBar('ccMonthPremiumBar',p);document.getElementById('ccMonthCommission').textContent=fmtMoney(m.comissao);document.getElementById('ccMonthCommissionGoal').textContent=fmtMoney(g.comissao);document.getElementById('ccMonthCommissionPct').textContent=pc+'%';setBar('ccMonthCommissionBar',pc);document.getElementById('ccTargetHeadline').textContent=`VOCÊ ESTÁ ${p}% DA META!`;document.getElementById('ccTargetText').textContent=`Falta(m) ${fmtMoney(Math.max(0,g.premium-m.premium))} para bater a meta mensal.`}
-function renderFullFollowups(){const q=(document.getElementById('fuSearch')?.value||'').toLowerCase();const mode=document.getElementById('fuRange')?.value||'all';const x=followItems();let arr=mode==='all'?[...x.overdue,...x.today,...x.next]:x[mode]||[];arr=arr.filter(c=>!q||[c.nome,c.telefone,c.agente].some(v=>String(v||'').toLowerCase().includes(q)));document.getElementById('fullFollowBody').innerHTML=arr.map(c=>`<tr><td><strong>${c.nome}</strong></td><td>${c.proxContato}</td><td>${(c.status||'').split(' / ')[0]}</td><td>${c.agente||'—'}</td><td>${c.telefone||'—'}</td><td><button class="btn secondary small" onclick="openClientModal('${c.id}')">Abrir</button></td></tr>`).join('')||'<tr><td colspan="6">Nenhum follow-up encontrado.</td></tr>'}
+function renderFullFollowups(){const q=(document.getElementById('fuSearch')?.value||'').toLowerCase();const mode=document.getElementById('fuRange')?.value||'all';const x=followItems();let arr=mode==='all'?[...x.overdue,...x.today,...x.next]:x[mode]||[];arr=arr.filter(c=>!q||[c.nome,c.telefone,c.agente].some(v=>String(v||'').toLowerCase().includes(q)));const staleTxt=c=>{const sd=staleDays(c);return sd===Infinity?'nunca':sd+' dias'};document.getElementById('fullFollowBody').innerHTML=arr.map(c=>`<tr><td><strong>${c.nome}</strong></td><td>${c.proxContato||'—'}</td><td>${(c.status||'').split(' / ')[0]}</td><td>${c.agente||'—'}</td><td>${c.telefone||'—'}</td><td>${staleTxt(c)}</td><td><button class="btn secondary small" onclick="openClientModal('${c.id}')">Abrir</button></td></tr>`).join('')||'<tr><td colspan="7">Nenhum follow-up encontrado.</td></tr>'}
 function renderPolicies(){const q=(document.getElementById('policySearch')?.value||'').toLowerCase();const af=document.getElementById('policyAgentFilter')?.value||'';const arr=STATE.clients.filter(c=>c.status==='Issued / Emitida'&&(!af||c.agente===af)&&(!q||[c.nome,c.numeroApolice,c.companhia,c.agente].some(v=>String(v||'').toLowerCase().includes(q))));document.getElementById('policyBody').innerHTML=arr.map(c=>`<tr><td><strong>${c.nome}</strong></td><td>${c.numeroApolice||'—'}</td><td>${c.companhia||'—'}</td><td>${(c.tipoSeguro||'').split(' / ')[0]}</td><td>${fmtMoney(c.coberturaValor)}</td><td>${fmtMoney(c.premioMensal)}</td><td>${fmtMoney(c.comissao)}</td><td>${c.dataEmissao||'—'}</td><td>${c.agente||'—'}</td></tr>`).join('')||'<tr><td colspan="9">Nenhuma apólice emitida.</td></tr>'}
-function renderReports(){const list=getFilteredClients(),m=metricsFor(list),leads=list.length,issued=m.apolices,conv=leads?Math.round(issued/leads*100):0;document.getElementById('reportSummary').innerHTML=`<div class="report-big">${fmtMoney(m.premium)}</div><div class="report-line"><span>Clientes</span><b>${m.clientes}</b></div><div class="report-line"><span>Apólices emitidas</span><b>${m.apolices}</b></div><div class="report-line"><span>Comissão</span><b>${fmtMoney(m.comissao)}</b></div>`;document.getElementById('reportConversion').innerHTML=`<div class="report-big">${conv}%</div><div class="report-line"><span>Leads / Clientes</span><b>${leads}</b></div><div class="report-line"><span>Emitidas</span><b>${issued}</b></div><div class="report-line"><span>Ticket médio premium</span><b>${fmtMoney(issued?m.premium/issued:0)}</b></div>`;const rows=STATE.agents.map(a=>({a,m:metricsFor(STATE.clients.filter(c=>c.agente===a.nome))})).sort((x,y)=>y.m.comissao-x.m.comissao);document.getElementById('reportAgents').innerHTML=rows.slice(0,8).map((r,i)=>`<div class="report-line"><span>#${i+1} ${r.a.nome}</span><b>${fmtMoney(r.m.comissao)}</b></div>`).join('')}
+function renderReports(){const list=getFilteredClients(),m=metricsFor(list),leads=list.length,issued=m.apolices,conv=leads?Math.round(issued/leads*100):0;const g=goalsForSelection(),weekGoal=(g.comissao||0)/4.33,cut=new Date();cut.setDate(cut.getDate()-7);const weekIssued=list.filter(c=>c.status==='Issued / Emitida'&&c.dataEmissao&&new Date(c.dataEmissao+'T00:00:00')>=cut),weekCom=weekIssued.reduce((s,c)=>s+(Number(c.comissao)||0),0),weekPct=weekGoal?Math.round(weekCom/weekGoal*100):0;const rw=document.getElementById('reportWeek');if(rw)rw.innerHTML=`<div class="report-big">${weekPct}%</div><div class="report-line"><span>Emitidas (7 dias)</span><b>${weekIssued.length}</b></div><div class="report-line"><span>Comissão da semana</span><b>${fmtMoney(weekCom)}</b></div><div class="report-line"><span>Meta semanal</span><b>${fmtMoney(Math.round(weekGoal))}</b></div>`;document.getElementById('reportSummary').innerHTML=`<div class="report-big">${fmtMoney(m.premium)}</div><div class="report-line"><span>Clientes</span><b>${m.clientes}</b></div><div class="report-line"><span>Apólices emitidas</span><b>${m.apolices}</b></div><div class="report-line"><span>Comissão</span><b>${fmtMoney(m.comissao)}</b></div>`;document.getElementById('reportConversion').innerHTML=`<div class="report-big">${conv}%</div><div class="report-line"><span>Leads / Clientes</span><b>${leads}</b></div><div class="report-line"><span>Emitidas</span><b>${issued}</b></div><div class="report-line"><span>Ticket médio premium</span><b>${fmtMoney(issued?m.premium/issued:0)}</b></div>`;const rows=STATE.agents.map(a=>({a,m:metricsFor(STATE.clients.filter(c=>c.agente===a.nome))})).sort((x,y)=>y.m.comissao-x.m.comissao);document.getElementById('reportAgents').innerHTML=rows.slice(0,8).map((r,i)=>`<div class="report-line"><span>#${i+1} ${r.a.nome}</span><b>${fmtMoney(r.m.comissao)}</b></div>`).join('')}
+
+/* ---------- importar CSV ---------- */
+function parseCSV(text){
+  const rows=[]; let row=[], val='', inQ=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(inQ){
+      if(ch==='"'){ if(text[i+1]==='"'){ val+='"'; i++; } else inQ=false; }
+      else val+=ch;
+    }
+    else if(ch==='"') inQ=true;
+    else if(ch===','){ row.push(val); val=''; }
+    else if(ch==='\n'){ row.push(val); rows.push(row); row=[]; val=''; }
+    else if(ch==='\r'){ /* ignora */ }
+    else val+=ch;
+  }
+  if(val!==''||row.length){ row.push(val); rows.push(row); }
+  return rows.filter(r=>r.some(c=>String(c).trim()!==''));
+}
+function mapCsvTipo(v){
+  const s=String(v||'').toLowerCase();
+  if(s.includes('iul')) return LISTS.insuranceTypes.find(t=>t.toLowerCase().includes('iul'))||LISTS.insuranceTypes[0];
+  if(s.includes('term')) return LISTS.insuranceTypes.find(t=>t.toLowerCase().startsWith('term'))||LISTS.insuranceTypes[0];
+  const hit=LISTS.insuranceTypes.find(t=>t.toLowerCase()===s);
+  return hit||LISTS.insuranceTypes[0];
+}
+function mapCsvStatus(v){
+  const s=String(v||'').toLowerCase().trim();
+  if(!s) return LISTS.status[0];
+  const hit=LISTS.status.find(t=>t.toLowerCase()===s||t.split(' / ')[0].toLowerCase()===s);
+  return hit||LISTS.status[0];
+}
+async function importCSVFile(file){
+  const text = await file.text();
+  const rows = parseCSV(text);
+  if(rows.length<2){ alert('CSV vazio ou sem linhas de dados.'); return; }
+  const head = rows[0].map(c=>String(c).trim().toLowerCase());
+  const idx = n => head.indexOf(n);
+  const iNome=idx('nome'), iTel=idx('telefone'), iTipo=idx('tiposeguro'), iComp=idx('companhia'), iPrem=idx('premiomensal'), iStatus=idx('status'), iPct=idx('comissaopct');
+  if(iNome<0){ alert('Cabeçalho inválido. Use: nome,telefone,tipoSeguro,companhia,premioMensal,status'); return; }
+  let agent = selectedAgentName();
+  if(!agent){ const first=(STATE.agents||[]).find(a=>a.ativo); agent = first?first.nome:''; }
+  let count=0;
+  for(let r=1;r<rows.length;r++){
+    const cols=rows[r];
+    const nome=String(cols[iNome]||'').trim();
+    if(!nome) continue;
+    const premio=Number(String(cols[iPrem]||'').replace(',','.'))||0;
+    const pct=iPct>=0&&cols[iPct]!==''?Number(String(cols[iPct]).replace(',','.'))||52.5:52.5;
+    STATE.clients.push({
+      id: cid(), nome,
+      telefone: iTel>=0?String(cols[iTel]||'').trim():'',
+      tipoSeguro: mapCsvTipo(iTipo>=0?cols[iTipo]:''),
+      companhia: iComp>=0?String(cols[iComp]||'').trim():'',
+      premioMensal: premio,
+      status: mapCsvStatus(iStatus>=0?cols[iStatus]:''),
+      dataContato: todayStr(),
+      comissaoPct: pct, comissaoMeses: 9,
+      comissao: premio*9*(pct/100),
+      agente: agent,
+    });
+    count++;
+  }
+  await saveState();
+  renderAll();
+  alert(count+' cliente(s) importado(s).');
+}
+
+/* ---------- visão do líder ---------- */
+function renderLeaderView(){
+  const grid = document.getElementById('leaderGrid');
+  if(!grid) return;
+  const rows = STATE.agents.filter(a=>a.ativo).map(a=>{
+    const m = metricsFor(STATE.clients.filter(c=>c.agente===a.nome));
+    const g = goalForAgent(a);
+    const pc = g.comissao ? Math.min(100, Math.round(m.comissao/g.comissao*100)) : 0;
+    return {nome:a.nome, m, g, pc};
+  }).sort((x,y)=>y.m.comissao-x.m.comissao);
+  grid.innerHTML = rows.map((r,i)=>`<div class="agent-goal-card" style="text-align:left;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <strong>#${i+1} ${r.nome}</strong>
+      <span class="status-pill" style="background:#d3e6c8;color:#365423;">${r.pc}% da meta</span>
+    </div>
+    <div class="report-line"><span>Clientes</span><b>${r.m.clientes}</b></div>
+    <div class="report-line"><span>Emitidas</span><b>${r.m.apolices}</b></div>
+    <div class="report-line"><span>Comissão</span><b>${fmtMoney(r.m.comissao)}</b></div>
+    <div class="report-line" style="border-bottom:none;"><span>Meta comissão</span><b>${fmtMoney(r.g.comissao)}</b></div>
+  </div>`).join('') || '<div class="empty">Nenhum agente ativo.</div>';
+}
 
 /* ---------- master render ---------- */
 function renderAll(){
@@ -1503,6 +1708,8 @@ function renderAll(){
   renderFullFollowups();
   renderPolicies();
   renderReports();
+  renderCompTable();
+  renderLeaderView();
 
   document.getElementById('btnAddAgent').style.display = SESSION.role==='admin' ? '' : 'none';
   document.getElementById('btnProfile').style.display = SESSION.role==='agent' ? '' : 'none';
@@ -1672,6 +1879,17 @@ function openProfileModal(){
   document.getElementById('profileModalBg').classList.add('open');
 }
 function closeProfileModal(){ document.getElementById('profileModalBg').classList.remove('open'); }
+/* ---------- calculadora de comissão ---------- */
+function calcCommission(){
+  const p=Number(document.getElementById('calc_premio').value)||0;
+  const c=Number(document.getElementById('calc_pct').value)||0;
+  const m=Number(document.getElementById('calc_meses').value)||0;
+  const s=Number(document.getElementById('calc_parte').value)||0;
+  const v=p*m*(c/100)*(s/100);
+  document.getElementById('calc_result').value=new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(v);
+}
+function openCalcModal(){ calcCommission(); document.getElementById('calcModalBg').classList.add('open'); }
+function closeCalcModal(){ document.getElementById('calcModalBg').classList.remove('open'); }
 async function saveProfileFromModal(){
   const me = STATE.agents.find(a=>a.nome===SESSION.nome);
   if(!me){ alert('Perfil não encontrado.'); return; }
@@ -1808,6 +2026,13 @@ document.getElementById('btnAddAgent').addEventListener('click', openAgentModal)
 document.getElementById('af_cancel').addEventListener('click', closeAgentModal);
 document.getElementById('af_save').addEventListener('click', saveAgentFromModal);
 document.getElementById('btnProfile').addEventListener('click', openProfileModal);
+document.getElementById('btnCalc').addEventListener('click', openCalcModal);
+document.getElementById('calc_close').addEventListener('click', closeCalcModal);
+['calc_premio','calc_pct','calc_meses','calc_parte'].forEach(id=>document.getElementById(id).addEventListener('input', calcCommission));
+document.getElementById('ct_add').addEventListener('click', addCompTableRow);
+document.getElementById('btnPrintReport').addEventListener('click', ()=>window.print());
+document.getElementById('btnImportCsv').addEventListener('click', ()=>document.getElementById('csvFileInput').click());
+document.getElementById('csvFileInput').addEventListener('change', async e=>{ const f=e.target.files[0]; if(f){ try{ await importCSVFile(f); }catch(err){ alert('Erro ao importar: '+err.message); } } e.target.value=''; });
 document.getElementById('pf_cancel').addEventListener('click', closeProfileModal);
 document.getElementById('pf_save').addEventListener('click', saveProfileFromModal);
 document.getElementById('profileModalBg').addEventListener('click', (e)=>{ if(e.target===e.currentTarget) closeProfileModal(); });
