@@ -1,0 +1,2139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LIFEPLAN2026 V8 — Sales Command Center</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#122820;
+    --ink-soft:#2c443a;
+    --paper:#eef2ee;
+    --paper-alt:#e4ebe3;
+    --card:#ffffff;
+    --line:#d7ded4;
+    --brass:#b3872c;
+    --brass-soft:#e7cf9c;
+    --teal:#3f7c74;
+    --teal-soft:#d7e9e5;
+    --brick:#a8442e;
+    --brick-soft:#f3ddd6;
+    --shadow: 0 1px 2px rgba(18,40,32,.06), 0 8px 24px -12px rgba(18,40,32,.18);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);font-family:'Public Sans',sans-serif;-webkit-font-smoothing:antialiased;}
+  body{padding:28px 32px 80px;}
+  h1,h2,h3{font-family:'Fraunces',serif;margin:0;font-weight:600;letter-spacing:-.01em;}
+  a{color:inherit;}
+
+  /* ---------- LOGIN ---------- */
+  #loginScreen{
+    min-height:80vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:22px;
+  }
+  .login-card{
+    background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);
+    padding:40px 40px 34px;width:100%;max-width:400px;text-align:left;
+  }
+  .login-brand{display:flex;flex-direction:column;gap:4px;margin-bottom:26px;}
+  .login-brand .mark{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--teal),var(--ink));margin-bottom:10px;}
+  .login-brand h1{font-size:26px;}
+  .login-brand .tag{font-size:12.5px;color:var(--ink-soft);opacity:.7;}
+  .login-card label{display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px;}
+  .login-card select{width:100%;margin-bottom:18px;padding:12px 14px;}
+  .login-card input[type=text], .login-card input[type=password]{width:100%;margin-bottom:16px;padding:12px 14px;font-size:14px;}
+  .login-error{background:var(--brick-soft);color:var(--brick);font-size:12.5px;font-weight:700;border-radius:9px;padding:10px 12px;margin-bottom:16px;}
+  .login-note{font-size:11.5px;color:var(--ink-soft);opacity:.6;line-height:1.5;margin-top:16px;}
+
+  /* ---------- SHELL ---------- */
+  #appShell{display:none;}
+  #appShell.active{display:block;padding-left:252px;}
+
+  .brandline{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:6px;padding-top:2px;}
+  .brand{display:flex;flex-direction:column;gap:2px;}
+  .brand h1{font-size:30px;color:var(--ink);}
+  .brand .tag{font-size:13px;color:var(--ink-soft);opacity:.75;font-weight:500;}
+  .filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .session-chip{
+    display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--line);
+    border-radius:20px;padding:6px 8px 6px 14px;font-size:12.5px;font-weight:700;
+  }
+  .session-chip .role-dot{width:7px;height:7px;border-radius:50%;background:var(--teal);}
+  .session-chip button{
+    font-family:'Public Sans',sans-serif;font-size:11px;font-weight:700;background:var(--paper-alt);
+    border:none;border-radius:14px;padding:6px 11px;cursor:pointer;color:var(--ink-soft);
+  }
+  .session-chip button:hover{background:var(--line);}
+
+  select{
+    font-family:'Public Sans',sans-serif;font-size:13.5px;font-weight:600;color:var(--ink);
+    background:var(--card);border:1px solid var(--line);border-radius:9px;padding:9px 12px;
+    cursor:pointer; appearance:none; -webkit-appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%23516b5f'/></svg>");
+    background-repeat:no-repeat; background-position:right 12px center; padding-right:28px;
+  }
+  select:focus{outline:2px solid var(--teal); outline-offset:1px;}
+  select:disabled{opacity:.55;cursor:not-allowed;}
+
+  /* ---------- LEFT SIDEBAR NAVIGATION ---------- */
+  nav.tabs{
+    position:fixed;left:0;top:0;bottom:0;width:228px;z-index:30;
+    display:flex;flex-direction:column;gap:6px;margin:0;padding:28px 14px;
+    background:var(--ink);border-right:1px solid rgba(255,255,255,.08);
+    box-shadow:8px 0 28px -18px rgba(18,40,32,.35);
+  }
+  nav.tabs::before{
+    content:'LIFEPLAN2026';display:block;font-family:'Fraunces',serif;font-size:21px;font-weight:700;
+    color:#fff;padding:0 12px 4px;letter-spacing:-.02em;
+  }
+  nav.tabs::after{
+    content:'FOCO • AÇÃO • RESULTADOS';display:block;font-size:9px;font-weight:700;letter-spacing:.08em;
+    color:rgba(255,255,255,.5);padding:0 12px 22px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:8px;
+  }
+  nav.tabs button{
+    width:100%;text-align:left;font-family:'Public Sans',sans-serif;font-weight:700;font-size:13px;letter-spacing:.01em;
+    background:transparent;border:1px solid transparent;border-radius:10px;padding:12px 13px;color:rgba(255,255,255,.68);
+    opacity:1;cursor:pointer;transition:.18s ease;
+  }
+  nav.tabs button.active{opacity:1;color:#fff;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.08);box-shadow:inset 3px 0 0 var(--brass);}
+  nav.tabs button:hover{opacity:1;color:#fff;background:rgba(255,255,255,.07);}
+
+  @media (max-width:800px){
+    #appShell.active{padding-left:0;}
+    nav.tabs{position:sticky;top:0;bottom:auto;width:100%;height:auto;flex-direction:row;align-items:center;gap:4px;
+      padding:8px;margin:0 -0px 18px;overflow-x:auto;border-right:none;border-bottom:1px solid rgba(255,255,255,.08);
+    }
+    nav.tabs::before,nav.tabs::after{display:none;}
+    nav.tabs button{width:auto;min-width:max-content;text-align:center;padding:9px 12px;font-size:12px;}
+    nav.tabs button.active{box-shadow:inset 0 -3px 0 var(--brass);}
+  }
+
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:22px;}
+  @media (max-width:1180px){.kpi-row{grid-template-columns:repeat(3,1fr);}}
+  @media (max-width:640px){.kpi-row{grid-template-columns:repeat(2,1fr);}}
+  .kpi{background:var(--card);border-radius:14px;padding:16px 16px 14px;box-shadow:var(--shadow);border:1px solid var(--line);}
+  .kpi .lbl{font-size:11px;font-weight:700;color:var(--ink-soft);opacity:.7;text-transform:uppercase;letter-spacing:.04em;line-height:1.35;min-height:28px;}
+  .kpi .val{font-family:'Fraunces',serif;font-size:28px;margin-top:6px;color:var(--ink);}
+  .kpi.accent-brick .val{color:var(--brick);}
+  .kpi.accent-teal .val{color:var(--teal);}
+  .kpi.accent-brass .val{color:var(--brass);}
+
+  .grid2{display:grid;grid-template-columns:1.1fr 1fr;gap:16px;margin-bottom:16px;align-items:start;}
+  @media (max-width:980px){.grid2{grid-template-columns:1fr;}}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;align-items:start;}
+  @media (max-width:980px){.grid3{grid-template-columns:1fr;}}
+
+  .card{background:var(--card);border-radius:16px;padding:22px 24px;box-shadow:var(--shadow);border:1px solid var(--line);}
+  .card h2{font-size:17px;margin-bottom:4px;}
+  .card .sub{font-size:12px;color:var(--ink-soft);opacity:.65;margin-bottom:16px;}
+
+  .goal-row{margin-bottom:16px;}
+  .goal-row:last-child{margin-bottom:0;}
+  .goal-top{display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:6px;}
+  .goal-top .nums{color:var(--ink-soft);font-weight:500;}
+  .bar-track{height:9px;border-radius:5px;background:var(--paper-alt);overflow:hidden;}
+  .bar-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--teal),var(--brass));}
+
+  .funnel{display:flex;flex-direction:column;gap:8px;}
+  .funnel-row{display:grid;grid-template-columns:130px 1fr 34px;gap:10px;align-items:center;}
+  .funnel-row .fname{font-size:12.5px;font-weight:600;color:var(--ink-soft);}
+  .funnel-track{height:20px;background:var(--paper-alt);border-radius:6px;overflow:hidden;}
+  .funnel-fill{height:100%;background:var(--teal);border-radius:6px 0 0 6px;transition:width .3s;}
+  .funnel-row .fcount{font-family:'Fraunces',serif;font-weight:600;font-size:14px;text-align:right;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);opacity:.65;font-weight:700;padding:0 10px 8px;border-bottom:1px solid var(--line);}
+  td{padding:9px 10px;border-bottom:1px solid var(--paper-alt);vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  td.num, th.num{text-align:right;}
+  .rank-name{font-weight:700;}
+  .rank-medal{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:10.5px;font-weight:800;color:#fff;margin-right:8px;}
+  .m1{background:var(--brass);} .m2{background:#8c9a8e;} .m3{background:#a9714a;} .m0{background:var(--paper-alt);color:var(--ink-soft);}
+
+  .fu-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  @media (max-width:760px){.fu-cols{grid-template-columns:1fr;}}
+  .fu-box{border:1px solid var(--line);border-radius:12px;padding:14px 14px 6px;}
+  .fu-box .fu-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+  .fu-box .fu-head .n{font-family:'Fraunces',serif;font-size:22px;}
+  .fu-box.overdue{background:var(--brick-soft);border-color:transparent;}
+  .fu-box.overdue .n{color:var(--brick);}
+  .fu-box.today{background:var(--brass-soft);border-color:transparent;}
+  .fu-box.today .n{color:var(--brass);}
+  .fu-box ul{list-style:none;margin:0;padding:0;max-height:150px;overflow-y:auto;}
+  .fu-box li{font-size:12.5px;padding:5px 0;border-top:1px dashed rgba(18,40,32,.12);display:flex;justify-content:space-between;gap:8px;}
+  .fu-box li:first-child{border-top:none;}
+  .fu-box .empty{font-size:12px;opacity:.55;padding:8px 0;}
+
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+  .btn{font-family:'Public Sans',sans-serif;font-weight:700;font-size:13px;border:none;border-radius:9px;padding:10px 16px;cursor:pointer;background:var(--ink);color:#fff;}
+  .btn:hover{background:var(--ink-soft);}
+  .btn.secondary{background:var(--card);color:var(--ink);border:1px solid var(--line);}
+  .btn.danger{background:var(--brick);}
+  .btn.small{padding:5px 10px;font-size:11.5px;border-radius:7px;}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+
+  .table-wrap{overflow-x:auto;}
+  input[type=text], input[type=number], input[type=date], select.cell{
+    width:100%;font-family:'Public Sans',sans-serif;font-size:12.5px;padding:6px 7px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);
+  }
+  input:disabled, select.cell:disabled{background:var(--paper-alt);opacity:.7;}
+  .status-pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;}
+
+  .modal-bg{position:fixed;inset:0;background:rgba(18,40,32,.35);display:none;align-items:flex-start;justify-content:center;padding:60px 16px;z-index:50;overflow-y:auto;}
+  .modal-bg.open{display:flex;}
+  .modal{background:#fff;border-radius:16px;padding:26px 28px;width:100%;max-width:640px;box-shadow:var(--shadow);}
+  .modal h2{margin-bottom:16px;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .form-grid .full{grid-column:1/-1;}
+  .form-grid label{display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-bottom:5px;text-transform:uppercase;letter-spacing:.03em;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;}
+
+  .empty-state{text-align:center;padding:50px 20px;color:var(--ink-soft);}
+  .empty-state h3{margin-bottom:6px;color:var(--ink);}
+  .empty-state p{font-size:13px;opacity:.75;max-width:360px;margin:0 auto;}
+
+  .footer-note{margin-top:26px;font-size:11.5px;color:var(--ink-soft);opacity:.55;text-align:center;}
+  ::-webkit-scrollbar{height:8px;width:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
+
+  /* ---------- CHARTS ---------- */
+  .chart-flex{display:flex;gap:26px;align-items:center;flex-wrap:wrap;}
+  .donut-wrap{position:relative;width:132px;height:132px;flex:none;}
+  .donut{width:132px;height:132px;border-radius:50%;}
+  .donut-hole{position:absolute;inset:18px;background:var(--card);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .donut-hole-val{font-family:'Fraunces',serif;font-size:22px;line-height:1;}
+  .donut-hole-lbl{font-size:9.5px;color:var(--ink-soft);opacity:.65;margin-top:3px;text-align:center;padding:0 6px;}
+  .donut-legend{flex:1;min-width:170px;display:flex;flex-direction:column;gap:7px;}
+  .legend-row{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;}
+  .legend-row .dot{width:9px;height:9px;border-radius:50%;flex:none;}
+  .legend-row .legend-val{margin-left:auto;font-weight:700;color:var(--ink-soft);}
+  .donut-empty{width:132px;height:132px;border-radius:50%;background:var(--paper-alt);display:flex;align-items:center;justify-content:center;font-size:11.5px;color:var(--ink-soft);opacity:.6;text-align:center;padding:0 14px;}
+
+  .bars-row{display:flex;align-items:flex-end;gap:12px;height:150px;}
+  .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0;}
+  .bar-outer{width:100%;max-width:40px;height:100%;background:var(--paper-alt);border-radius:7px 7px 0 0;display:flex;align-items:flex-end;overflow:hidden;}
+  .bar-inner{width:100%;background:linear-gradient(180deg,var(--brass),var(--teal));border-radius:7px 7px 0 0;min-height:2px;}
+  .bar-value{font-size:10.5px;font-weight:700;margin-bottom:5px;white-space:nowrap;}
+  .bar-label{font-size:10px;color:var(--ink-soft);opacity:.75;margin-top:7px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:64px;}
+  .bars-empty{font-size:12.5px;color:var(--ink-soft);opacity:.6;padding:20px 0;text-align:center;}
+
+  .agent-goal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px;}
+  .agent-goal-card{border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center;}
+  .agent-goal-card .aname{font-weight:700;font-size:12.5px;margin-top:8px;}
+  .agent-goal-card .adonut{width:88px;height:88px;margin:0 auto;position:relative;}
+  .agent-goal-card .adonut .donut{width:88px;height:88px;}
+  .agent-goal-card .adonut .donut-hole{inset:12px;}
+  .agent-goal-card .adonut .donut-hole-val{font-size:16px;}
+  .agent-goal-card .adonut .donut-hole-lbl{font-size:8px;}
+
+  .member-header{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px;}
+  .member-header .who{display:flex;align-items:center;gap:12px;}
+  .avatar{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--teal),var(--ink));color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:17px;flex:none;}
+
+/* ---------- LIFEPLAN2026 V2 SALES ENHANCEMENTS ---------- */
+.sales-command{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:14px;margin:16px 0}
+.command-card{background:linear-gradient(135deg,var(--ink),#23483d);color:#fff;border-radius:16px;padding:20px;box-shadow:var(--shadow);min-height:132px}
+.command-card h3{font-size:22px;color:#fff;margin-bottom:6px}.command-card .eyebrow{font-size:10px;letter-spacing:.12em;text-transform:uppercase;opacity:.65;font-weight:800}.command-card .big{font-size:30px;font-weight:800;margin:8px 0 4px}.command-card .small{font-size:12px;opacity:.78}.command-card.warning{background:linear-gradient(135deg,#8a3d29,#a8442e)}.command-card.gold{background:linear-gradient(135deg,#7a5b16,#b3872c)}
+.progress-big{height:10px;background:rgba(255,255,255,.18);border-radius:99px;overflow:hidden;margin-top:12px}.progress-big span{display:block;height:100%;background:#fff;border-radius:99px;width:0}
+.action-list{display:grid;gap:8px}.action-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 12px;background:var(--paper-alt);border-radius:10px;font-size:12px}.action-item strong{font-size:13px}.action-item .mini-btn{border:0;border-radius:8px;padding:6px 9px;font-size:11px;font-weight:800;cursor:pointer;background:var(--card);color:var(--ink)}
+.client-tools{display:flex;gap:9px;flex-wrap:wrap;align-items:center}.client-search{min-width:260px}.client-tools select,.client-tools input{margin:0}
+.agent-score{display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px 12px;background:var(--paper-alt);border-radius:10px}.score-ring{font-weight:800;font-size:14px}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.badge{padding:7px 9px;border-radius:999px;background:var(--brass-soft);color:#6b4f10;font-size:10px;font-weight:800}.badge.locked{background:var(--paper-alt);color:#8b958f}
+@media(max-width:900px){.sales-command{grid-template-columns:1fr}.client-search{min-width:180px;width:100%}}
+
+  /* ---------- SIDEBAR LAYOUT (collapsible) ---------- */
+  .app-layout{display:flex;gap:26px;align-items:flex-start;}
+  .sidebar{
+    width:236px;flex:none;position:sticky;top:28px;display:flex;flex-direction:column;gap:22px;
+    background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px 18px;box-shadow:var(--shadow);
+    transition:width .2s ease, padding .2s ease; overflow:hidden;
+  }
+  .sidebar-toggle{
+    position:absolute; top:14px; right:-13px; width:26px; height:26px; border-radius:50%;
+    background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); cursor:pointer;
+    font-size:14px; font-weight:700; color:var(--ink-soft); line-height:1; z-index:5;
+  }
+  .sidebar-brand .mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--teal),var(--ink));margin-bottom:12px;}
+  .sidebar-brand h1{font-size:21px;white-space:nowrap;}
+  .sidebar-brand .tag{font-size:10px;color:var(--ink-soft);opacity:.65;line-height:1.5;margin-top:5px;letter-spacing:.01em;white-space:nowrap;}
+  .tabs-vertical{display:flex;flex-direction:column;gap:3px;}
+  .tabs-vertical button{
+    display:flex; align-items:center; gap:10px;
+    text-align:left;font-family:'Public Sans',sans-serif;font-weight:700;font-size:13.5px;white-space:nowrap;
+    background:none;border:none;border-left:3px solid transparent;border-radius:0 10px 10px 0;
+    padding:11px 14px;color:var(--ink-soft);opacity:.7;cursor:pointer;
+  }
+  .tabs-vertical button.active{opacity:1;color:var(--ink);background:var(--paper-alt);border-left-color:var(--brass);}
+  .tabs-vertical button:hover{opacity:1;}
+  .tabs-vertical .ico{font-size:16px;flex:none;}
+  .sidebar-footer{margin-top:auto;font-size:10.5px;color:var(--ink-soft);opacity:.5;line-height:1.6;padding-top:16px;border-top:1px solid var(--line);white-space:nowrap;}
+  .main-content{flex:1;min-width:0;}
+  .topbar{display:flex;justify-content:flex-end;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:22px;}
+
+  /* collapsed state */
+  .sidebar.collapsed{width:72px;padding:24px 12px;}
+  .sidebar.collapsed .sidebar-brand h1,
+  .sidebar.collapsed .sidebar-brand .tag,
+  .sidebar.collapsed .tabs-vertical .lbl,
+  .sidebar.collapsed .sidebar-footer{display:none;}
+  .sidebar.collapsed .sidebar-brand{display:flex;flex-direction:column;align-items:center;}
+  .sidebar.collapsed .tabs-vertical button{justify-content:center;padding:11px 0;border-left:none;border-radius:10px;}
+  .sidebar.collapsed .tabs-vertical button.active{border-left:none;background:var(--paper-alt);}
+  .sidebar.collapsed .sidebar-toggle{transform:rotate(180deg);}
+
+  @media (max-width:900px){
+    .app-layout{flex-direction:column;}
+    .sidebar{width:100%!important;position:static;flex-direction:row;flex-wrap:wrap;align-items:center;gap:14px;padding:16px 18px!important;}
+    .sidebar-toggle{display:none;}
+    .sidebar-brand{display:flex;align-items:center;gap:10px;}
+    .sidebar-brand .mark{margin-bottom:0;}
+    .sidebar-brand h1{font-size:18px;display:block!important;}
+    .sidebar-brand .tag{display:none!important;}
+    .tabs-vertical{flex-direction:row;flex:1;flex-wrap:wrap;gap:6px;}
+    .tabs-vertical button{border-left:none;border-bottom:2px solid transparent;border-radius:8px;}
+    .tabs-vertical .lbl{display:inline!important;}
+    .tabs-vertical button.active{border-left:none;border-bottom-color:var(--brass);}
+    .sidebar-footer{display:none!important;}
+    .topbar{justify-content:space-between;}
+  }
+
+</style>
+
+<style id="lifeplan-blue-professional-theme">
+:root{
+  --lp-navy:#071a33;
+  --lp-blue:#0b5ed7;
+  --lp-blue2:#1683ff;
+  --lp-sky:#eaf3ff;
+  --lp-border:#d9e5f3;
+  --lp-text:#10233f;
+  --lp-muted:#6d7f96;
+  --lp-card:#ffffff;
+  --lp-bg:#f4f8fc;
+}
+body{background:var(--lp-bg)!important;color:var(--lp-text)!important}
+.sidebar{
+  background:linear-gradient(180deg,#06172e 0%,#0a2a52 58%,#0b5ed7 150%)!important;
+  box-shadow:6px 0 24px rgba(7,26,51,.12)!important;
+}
+.sidebar .brand,.sidebar .brandline,.sidebar h1,.sidebar h2{color:#fff!important}
+.sidebar nav a,.sidebar button{
+  border-radius:12px!important;margin:5px 10px!important;transition:.18s ease!important
+}
+.sidebar nav a:hover,.sidebar nav a.active{
+  background:rgba(255,255,255,.13)!important;color:#fff!important;
+  transform:translateX(2px)
+}
+main,.main,.content,.page{background:var(--lp-bg)!important}
+.topbar,.header,.app-header{
+  background:#fff!important;border-bottom:1px solid var(--lp-border)!important
+}
+.card,.panel,.kpi,.stat-card,.table-card,.section-card,.goal-card{
+  background:#fff!important;border:1px solid var(--lp-border)!important;
+  border-radius:18px!important;box-shadow:0 8px 24px rgba(20,65,110,.06)!important
+}
+.kpi,.stat-card{position:relative;overflow:hidden}
+.kpi:before,.stat-card:before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:4px;
+  background:linear-gradient(180deg,var(--lp-blue2),var(--lp-blue))
+}
+.kpi .value,.stat-card .value,.kpi-value{
+  color:var(--lp-navy)!important;font-weight:800!important
+}
+h1,h2,h3,h4{color:var(--lp-navy)!important}
+button,.btn,.primary,.btn-primary{border-radius:11px!important}
+button.primary,.btn-primary,.primary{
+  background:linear-gradient(135deg,var(--lp-blue),var(--lp-blue2))!important;
+  border:0!important;box-shadow:0 6px 16px rgba(11,94,215,.22)!important
+}
+input,select,textarea{
+  border:1px solid #ccdbea!important;border-radius:10px!important;background:#fff!important
+}
+input:focus,select:focus,textarea:focus{
+  outline:none!important;border-color:var(--lp-blue2)!important;
+  box-shadow:0 0 0 3px rgba(22,131,255,.12)!important
+}
+table thead th{background:#eef5fd!important;color:#35516f!important}
+table tbody tr:hover{background:#f7fbff!important}
+.badge,.chip,.status{border-radius:999px!important}
+.progress,.progress-bar-container{
+  background:#e7eef7!important;border-radius:999px!important;overflow:hidden
+}
+.progress-bar,.progress-fill{
+  background:linear-gradient(90deg,var(--lp-blue),var(--lp-blue2))!important
+}
+.member-header,.hero,.dashboard-hero{
+  background:linear-gradient(135deg,#071a33 0%,#0b5ed7 72%,#1683ff 100%)!important;
+  border-radius:20px!important;color:#fff!important;
+  box-shadow:0 12px 30px rgba(7,45,90,.16)!important
+}
+.member-header h1,.member-header h2,.hero h1,.hero h2,
+.dashboard-hero h1,.dashboard-hero h2{color:#fff!important}
+.section-title{display:flex;align-items:center;gap:10px}
+.section-title:after{
+  content:"";height:3px;flex:1;max-width:90px;border-radius:5px;
+  background:linear-gradient(90deg,var(--lp-blue),transparent)
+}
+.modal{backdrop-filter:blur(4px)}
+.modal-content{
+  border:1px solid var(--lp-border)!important;border-radius:20px!important;
+  box-shadow:0 24px 70px rgba(7,26,51,.25)!important
+}
+.alert,.notice{border-radius:14px!important}
+@media(max-width:800px){
+  .sidebar{box-shadow:none!important}
+  .card,.panel,.kpi,.stat-card,.table-card,.section-card,.goal-card{border-radius:14px!important}
+}
+</style>
+
+
+<style id="lifeplan-sales-command-center">
+/* =========================================================
+   LIFEPLAN2026 V5 — SALES COMMAND CENTER
+   Visual direction based on the requested dark-blue dashboard.
+   Existing HTML/JS/data structure is intentionally preserved.
+   ========================================================= */
+:root{
+  --lp-bg:#020d1b;
+  --lp-bg2:#06172a;
+  --lp-panel:#071c31;
+  --lp-panel2:#09243e;
+  --lp-line:rgba(91,155,214,.18);
+  --lp-text:#f4f8ff;
+  --lp-muted:#8ea6c1;
+  --lp-blue:#1683ff;
+  --lp-blue2:#0b5ed7;
+  --lp-cyan:#20c7ff;
+  --lp-green:#38c172;
+  --lp-orange:#ff8a00;
+  --lp-red:#ff4d5f;
+  --lp-purple:#815cff;
+  --lp-gold:#ffc247;
+  --lp-shadow:0 14px 40px rgba(0,0,0,.28);
+}
+html,body{background:radial-gradient(circle at 70% -10%,#0a2c4c 0,#020d1b 42%,#010914 100%)!important;color:var(--lp-text)!important;font-family:'Public Sans',Arial,sans-serif!important;}
+body{padding:0 28px 48px 28px!important;min-height:100vh;}
+#appShell.active{padding-left:270px!important;max-width:1800px;margin:0 auto;}
+
+/* SIDEBAR */
+nav.tabs{
+  width:250px!important;padding:22px 12px!important;
+  background:linear-gradient(180deg,#020d1b 0%,#031426 58%,#062b4d 100%)!important;
+  border-right:1px solid rgba(51,146,232,.18)!important;
+  box-shadow:10px 0 35px rgba(0,0,0,.28)!important;
+}
+nav.tabs::before{
+  content:'🛡️  LIFEPLAN2026'!important;display:block!important;
+  font-family:'Public Sans',sans-serif!important;font-size:22px!important;font-weight:800!important;
+  letter-spacing:-.04em!important;color:#fff!important;padding:4px 14px 4px!important;
+  text-shadow:0 0 20px rgba(32,199,255,.22);
+}
+nav.tabs::after{
+  content:'LIFE INSURANCE AGENCY  •  FOCO • AÇÃO • RESULTADOS'!important;
+  color:#5bb8ff!important;font-size:8.5px!important;letter-spacing:.07em!important;
+  padding:0 14px 22px!important;margin-bottom:8px!important;border-color:rgba(91,155,214,.16)!important;
+}
+nav.tabs button{
+  position:relative;width:100%!important;border-radius:12px!important;padding:12px 12px 12px 45px!important;
+  color:#a9bdd3!important;background:transparent!important;border:1px solid transparent!important;
+  font-size:13px!important;font-weight:700!important;text-align:left!important;
+}
+nav.tabs button::before{
+  position:absolute;left:15px;top:50%;transform:translateY(-50%);font-size:17px;opacity:.9;
+}
+nav.tabs button:nth-child(1)::before{content:'⌂'}
+nav.tabs button:nth-child(2)::before{content:'♙'}
+nav.tabs button:nth-child(3)::before{content:'◎'}
+nav.tabs button:nth-child(4)::before{content:'↗'}
+nav.tabs button.active{
+  color:#fff!important;background:linear-gradient(90deg,rgba(11,94,215,.62),rgba(22,131,255,.20))!important;
+  border-color:rgba(22,131,255,.35)!important;box-shadow:inset 4px 0 0 var(--lp-blue),0 8px 20px rgba(0,71,160,.16)!important;
+}
+nav.tabs button:hover{color:#fff!important;background:rgba(22,131,255,.10)!important;}
+
+/* TOP BAR */
+.brandline{
+  min-height:88px!important;margin:0 0 18px!important;padding:20px 2px 14px!important;
+  align-items:center!important;border-bottom:1px solid rgba(91,155,214,.12)!important;
+}
+.brand h1{font-family:'Public Sans',sans-serif!important;font-size:25px!important;color:#fff!important;font-weight:800!important;letter-spacing:-.03em!important;}
+.brand .tag{color:#7f9ab7!important;font-size:11px!important;}
+.filters{gap:8px!important;}
+.filters select,.session-chip{
+  background:#06182b!important;color:#dcecff!important;border:1px solid rgba(91,155,214,.22)!important;
+  box-shadow:0 6px 18px rgba(0,0,0,.16)!important;
+}
+.session-chip{border-radius:12px!important;padding:8px 10px 8px 12px!important;}
+.session-chip button{background:#0b2d4c!important;color:#b8d7f2!important;}
+.session-chip .role-dot{background:var(--lp-green)!important;box-shadow:0 0 9px rgba(56,193,114,.65)!important;}
+
+/* CARDS */
+.card,.kpi,.agent-goal-card,.fu-box{
+  background:linear-gradient(180deg,rgba(8,30,51,.96),rgba(4,20,35,.98))!important;
+  border:1px solid var(--lp-line)!important;border-radius:14px!important;box-shadow:var(--lp-shadow)!important;
+  color:var(--lp-text)!important;
+}
+.card{padding:19px 20px!important;}
+.card h2{font-family:'Public Sans',sans-serif!important;font-size:15px!important;text-transform:uppercase!important;letter-spacing:.01em!important;color:#f6f9ff!important;font-weight:800!important;}
+.card .sub{color:var(--lp-muted)!important;opacity:1!important;font-size:11px!important;}
+
+/* KPI ROW */
+.kpi-row{gap:12px!important;margin-bottom:14px!important;}
+.kpi{position:relative!important;overflow:hidden!important;padding:15px 15px 13px!important;min-height:112px!important;}
+.kpi:after{content:'';position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,var(--lp-blue),var(--lp-cyan));opacity:.9;}
+.kpi:nth-child(2):after{background:linear-gradient(90deg,var(--lp-green),#8ce07d)}
+.kpi:nth-child(3):after{background:linear-gradient(90deg,var(--lp-orange),#ffc247)}
+.kpi:nth-child(4):after{background:linear-gradient(90deg,var(--lp-green),#70e49d)}
+.kpi:nth-child(5):after{background:linear-gradient(90deg,var(--lp-cyan),var(--lp-blue))}
+.kpi:nth-child(6):after{background:linear-gradient(90deg,var(--lp-purple),#b493ff)}
+.kpi .lbl{color:#9eb6cf!important;opacity:1!important;font-size:9.5px!important;min-height:27px!important;letter-spacing:.07em!important;}
+.kpi .val{font-family:'Public Sans',sans-serif!important;font-size:28px!important;font-weight:800!important;color:#fff!important;margin-top:5px!important;}
+.kpi.accent-brass .val{color:#fff!important}.kpi.accent-brick .val{color:#fff!important}.kpi.accent-teal .val{color:#fff!important}
+
+/* COMMAND CARDS */
+.sales-command{display:grid!important;grid-template-columns:1.25fr 1fr 1fr!important;gap:12px!important;margin-bottom:14px!important;}
+.command-card{
+  min-height:125px!important;border-radius:14px!important;padding:18px!important;
+  background:linear-gradient(135deg,#062b5a,#0751a6)!important;border:1px solid rgba(55,156,255,.3)!important;
+  box-shadow:0 12px 30px rgba(0,70,150,.18)!important;
+}
+.command-card.warning{background:linear-gradient(135deg,#3a1520,#8d2633)!important;border-color:rgba(255,77,95,.28)!important;}
+.command-card.gold{background:linear-gradient(135deg,#182c4a,#3a2b75)!important;border-color:rgba(129,92,255,.28)!important;}
+.command-card .eyebrow{color:#b9d9f6!important;opacity:1!important;font-size:9px!important;letter-spacing:.11em!important;}
+.command-card .big{font-family:'Public Sans',sans-serif!important;font-size:30px!important;font-weight:800!important;}
+.command-card .small{color:#c9def2!important;opacity:1!important;}
+.progress-big{height:6px!important;background:rgba(255,255,255,.14)!important;border-radius:99px!important;margin-top:13px!important;overflow:hidden!important;}
+.progress-big span{display:block;height:100%;background:linear-gradient(90deg,#21b5ff,#0b5ed7)!important;border-radius:99px!important;}
+
+/* LAYOUT */
+.grid2,.grid3{gap:12px!important;margin-bottom:12px!important;}
+.grid2{grid-template-columns:1.12fr 1fr!important;}
+.grid3{grid-template-columns:repeat(3,1fr)!important;}
+
+/* GOALS */
+.goal-row{margin-bottom:14px!important;}
+.goal-top{color:#e6f0fa!important;font-size:12px!important;}
+.goal-top .nums{color:#91a9c2!important;}
+.bar-track{height:8px!important;background:#0c2a44!important;}
+.bar-fill{background:linear-gradient(90deg,#0b5ed7,#20c7ff)!important;box-shadow:0 0 10px rgba(32,199,255,.22)!important;}
+
+/* FUNNEL */
+.funnel{gap:7px!important;}
+.funnel-row{grid-template-columns:120px 1fr 38px!important;}
+.funnel-row .fname{color:#d6e4f1!important;font-size:11.5px!important;}
+.funnel-track{height:22px!important;background:#0a2943!important;border-radius:4px!important;}
+.funnel-fill{background:linear-gradient(90deg,#0b5ed7,#1683ff)!important;box-shadow:0 0 12px rgba(22,131,255,.2)!important;}
+.funnel-row:nth-child(2) .funnel-fill{background:linear-gradient(90deg,#167d4b,#38c172)!important}
+.funnel-row:nth-child(3) .funnel-fill{background:linear-gradient(90deg,#a96a00,#ffb21a)!important}
+.funnel-row:nth-child(4) .funnel-fill{background:linear-gradient(90deg,#a84e00,#ff8a00)!important}
+.funnel-row:nth-child(5) .funnel-fill{background:linear-gradient(90deg,#a63c20,#ff5d35)!important}
+.funnel-row:nth-child(6) .funnel-fill{background:linear-gradient(90deg,#5b3db3,#815cff)!important}
+.funnel-row .fcount{font-family:'Public Sans',sans-serif!important;color:#d9eaff!important;font-size:11px!important;}
+
+/* TABLES / RANKING */
+table{font-size:11.5px!important;color:#dce9f6!important;}
+th{color:#6f8da9!important;border-bottom:1px solid rgba(91,155,214,.14)!important;font-size:9px!important;}
+td{border-bottom:1px solid rgba(91,155,214,.09)!important;padding:8px 7px!important;}
+tbody tr:hover{background:rgba(22,131,255,.07)!important;}
+.rank-name{color:#fff!important;}
+.rank-medal{box-shadow:0 0 10px rgba(255,194,71,.18);}
+
+/* FOLLOW-UPS */
+.fu-box{padding:12px!important;border-radius:11px!important;background:#061a2d!important;}
+.fu-box.overdue{background:linear-gradient(180deg,rgba(120,25,39,.55),rgba(50,16,26,.72))!important;border-color:rgba(255,77,95,.22)!important;}
+.fu-box.today{background:linear-gradient(180deg,rgba(105,73,11,.52),rgba(47,34,8,.72))!important;border-color:rgba(255,194,71,.2)!important;}
+.fu-box .fu-head{color:#dce9f6!important;}
+.fu-box .n{color:#fff!important;}
+.fu-box li{border-top:1px dashed rgba(155,190,220,.12)!important;color:#c9d9e9!important;}
+
+/* CHARTS */
+.bar-outer{background:#0a2943!important;}
+.bar-inner{background:linear-gradient(180deg,#20c7ff,#0b5ed7)!important;}
+.bar-value{color:#cfe3f6!important;}
+.donut-hole{background:#06182b!important;}
+.donut-hole-val{color:#fff!important;font-family:'Public Sans',sans-serif!important;font-weight:800!important;}
+.donut-hole-lbl{color:#7895b0!important;opacity:1!important;}
+.legend-row{color:#cfe0ef!important;}.legend-row .legend-val{color:#fff!important;}
+
+/* MEMBER AREA */
+.member-header{background:linear-gradient(135deg,#06172b,#0b3761)!important;border:1px solid rgba(91,155,214,.2)!important;border-radius:14px!important;padding:16px!important;}
+.member-header .sub{color:#9eb6cf!important;}
+.avatar{background:linear-gradient(135deg,#0b5ed7,#20c7ff)!important;color:#fff!important;box-shadow:0 0 20px rgba(22,131,255,.25)!important;}
+
+/* BUTTONS */
+.btn,button{font-family:'Public Sans',sans-serif!important;}
+.btn{background:linear-gradient(135deg,#0b5ed7,#1683ff)!important;color:#fff!important;border:1px solid rgba(83,178,255,.22)!important;box-shadow:0 8px 18px rgba(0,74,155,.2)!important;}
+.btn:hover{filter:brightness(1.08)!important;transform:translateY(-1px);}
+.btn.secondary{background:#071b30!important;color:#cfe2f4!important;border-color:rgba(91,155,214,.2)!important;}
+.btn.danger{background:linear-gradient(135deg,#9f2636,#d43b4d)!important;}
+
+/* FORMS / MODALS */
+input[type=text],input[type=number],input[type=date],input[type=password],select.cell,textarea,select{
+  background:#061a2d!important;color:#e5f0fa!important;border:1px solid rgba(91,155,214,.22)!important;
+}
+input::placeholder,textarea::placeholder{color:#5e7893!important;}
+.modal-bg{background:rgba(0,7,15,.78)!important;backdrop-filter:blur(7px)!important;}
+.modal{background:linear-gradient(180deg,#092039,#041322)!important;border:1px solid rgba(91,155,214,.2)!important;color:#fff!important;}
+.form-grid label{color:#9bb4cc!important;}
+
+/* EMPTY / FOOTER */
+.empty-state{color:#8ca5bd!important;}.empty-state h3{color:#fff!important;}
+.footer-note{color:#55728e!important;opacity:1!important;}
+
+/* LOGIN */
+#loginScreen{background:radial-gradient(circle at 50% 20%,#0a3154,#020d1b 65%)!important;min-height:100vh!important;}
+.login-card{background:linear-gradient(180deg,#092039,#041322)!important;border:1px solid rgba(91,155,214,.2)!important;color:#fff!important;box-shadow:0 25px 80px rgba(0,0,0,.35)!important;}
+.login-brand h1{color:#fff!important;font-family:'Public Sans',sans-serif!important;font-weight:800!important;}
+.login-brand .tag,.login-note{color:#87a2bb!important;opacity:1!important;}
+.login-card label{color:#9eb6cf!important;}
+
+@media(max-width:1180px){
+  .sales-command{grid-template-columns:1fr 1fr!important;}
+  .sales-command .command-card:first-child{grid-column:1/-1;}
+  .kpi-row{grid-template-columns:repeat(3,1fr)!important;}
+}
+@media(max-width:800px){
+  body{padding:0 12px 35px!important;}
+  #appShell.active{padding-left:0!important;}
+  nav.tabs{position:sticky!important;width:100%!important;height:auto!important;top:0!important;z-index:100!important;display:flex!important;overflow-x:auto!important;padding:8px!important;}
+  nav.tabs::before,nav.tabs::after{display:none!important;}
+  nav.tabs button{min-width:max-content!important;padding:10px 14px 10px 36px!important;}
+  .brandline{padding:14px 0!important;}
+  .filters{width:100%;}.filters select{flex:1;min-width:0;}
+  .session-chip{width:100%;justify-content:space-between;}
+  .kpi-row{grid-template-columns:repeat(2,1fr)!important;}
+  .sales-command{grid-template-columns:1fr!important;}
+  .sales-command .command-card:first-child{grid-column:auto;}
+  .grid2,.grid3{grid-template-columns:1fr!important;}
+}
+</style>
+
+<style id="lifeplan-v6-exact-style">
+.cc-hero{display:flex;justify-content:space-between;align-items:center;padding:20px 22px;margin-bottom:14px;background:linear-gradient(135deg,#061a30,#082f55 60%,#064b7b);border:1px solid rgba(70,170,255,.2);border-radius:16px;box-shadow:0 14px 38px rgba(0,0,0,.25)}
+.cc-kicker{font-size:9px;letter-spacing:.14em;color:#4eb8ff;font-weight:800}.cc-hero h1{margin:5px 0 3px;font-size:25px;color:#fff!important}.cc-hero p{margin:0;color:#91aac4;font-size:11px}.cc-hero-actions{display:flex;gap:8px}.cc-date{min-width:125px;padding:9px 12px;border:1px solid rgba(98,165,218,.2);border-radius:10px;background:rgba(1,12,24,.35);font-size:11px}.cc-date strong,.cc-date span{display:block}.cc-date span{color:#8099b2;font-size:9px;margin-top:2px}.cc-kpis{grid-template-columns:repeat(5,1fr)!important}.cc-kpi{min-height:132px!important;padding:14px!important}.cc-kpi .cc-icon{float:left;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;margin-right:9px;font-size:19px;background:#0862c8;box-shadow:0 0 20px rgba(22,131,255,.25)}.cc-kpi.green .cc-icon{background:#238b45}.cc-kpi.orange .cc-icon{background:#dc7200}.cc-kpi.purple .cc-icon{background:#6846cc}.cc-kpi .lbl{padding-top:2px!important;font-weight:800!important}.cc-kpi .lbl span{font-weight:500;color:#68829d}.cc-kpi .val{clear:both;padding-top:12px;font-size:29px!important}.cc-meta{display:flex;justify-content:space-between;color:#90a8c0;font-size:9px;margin-top:6px}.cc-meta b{color:#e7f0fb}.cc-progress{height:6px;background:#102b45;border-radius:99px;overflow:hidden;margin-top:7px}.cc-progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,#0b78ff,#1bc7ff);border-radius:99px}.cc-kpi.green .cc-progress span{background:linear-gradient(90deg,#2aa84a,#74d75e)}.cc-kpi.orange .cc-progress span{background:linear-gradient(90deg,#ff7600,#ffc247)}.cc-kpi.purple .cc-progress span{background:linear-gradient(90deg,#6847d7,#a77dff)}
+.cc-grid{display:grid;gap:12px}.cc-main-grid{grid-template-columns:1.18fr .95fr 1.08fr}.cc-lower-grid{grid-template-columns:1.08fr 1fr 1fr;margin-top:12px}.cc-bottom-grid{grid-template-columns:1.12fr .92fr .92fr 1fr;margin-top:12px}.cc-title{font-size:14px;font-weight:800;color:#f6f9ff;letter-spacing:.01em}.cc-title em{font-style:normal;color:#159cff;font-weight:600;font-size:10px}.cc-goals-content{display:flex;gap:16px;align-items:center;margin-top:15px}.cc-ring{width:158px;height:158px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#1185ff 0deg,#1185ff 223deg,#0d2b47 223deg 360deg);flex:none}.cc-ring>div{width:120px;height:120px;border-radius:50%;background:#061a2c;display:grid;place-items:center;text-align:center}.cc-ring strong{font-size:31px}.cc-ring small{font-size:8px;color:#7f9ab5}.cc-goal-lines{width:100%}.cc-goal-line{display:grid;grid-template-columns:1fr auto auto;gap:9px;align-items:center;padding:9px 0;border-bottom:1px solid rgba(95,146,190,.12);font-size:10px}.cc-goal-line b{color:#fff}.cc-goal-line .pct{color:#72e54e;font-weight:800}.cc-motivation{display:flex;align-items:center;gap:10px;margin-top:13px;padding:11px;border-radius:10px;background:#061b30;border:1px solid rgba(52,143,220,.18)}.cc-motivation>span{font-size:25px}.cc-motivation strong{display:block;font-size:12px}.cc-motivation small{display:block;color:#119dff;margin-top:3px}.cc-funnel{margin-top:13px;display:grid;gap:6px}.cc-funnel-row{display:flex;align-items:center;gap:5px}.cc-funnel-bar{height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;border-radius:5px;color:#fff;font-size:10px;font-weight:800;min-width:22%}.cc-funnel-bar span{font-weight:500}.cc-total{text-align:center;color:#14aaff;font-weight:800;font-size:11px;margin-top:8px}.cc-rank-head{display:grid;grid-template-columns:38px 1fr 85px 55px 80px;gap:5px;color:#6d88a3;font-size:8px;margin:15px 0 5px}.cc-rank-row{display:grid;grid-template-columns:38px 1fr 85px 55px 80px;gap:5px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(95,146,190,.11);font-size:10px}.cc-rank-row .medal{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#30445b;font-weight:800}.cc-rank-row:nth-child(1) .medal{background:#eaa31b;color:#fff}.cc-rank-row:nth-child(2) .medal{background:#7d8ea3}.cc-rank-row:nth-child(3) .medal{background:#b46c39}.cc-rank-row .me{color:#54c6ff;font-weight:800}.cc-link-btn{width:100%;margin-top:10px;border:1px solid rgba(22,131,255,.22)!important;background:#06213b!important;color:#13a3ff!important;border-radius:8px!important;padding:8px;font-size:9px;font-weight:800;cursor:pointer}.cc-tabs{display:flex;gap:5px;margin:12px 0 8px}.cc-tabs button{background:#061c31!important;border:1px solid rgba(92,148,199,.15)!important;color:#b1c5d9!important;padding:7px 9px!important;font-size:9px!important}.cc-tabs button.active{border-color:#159dff!important;color:#fff!important}.cc-tabs button:first-child{color:#ff5967!important}.cc-list{min-height:155px}.cc-list-item{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:10px 5px;border-bottom:1px solid rgba(95,146,190,.11);font-size:10px}.cc-list-item strong{font-size:11px}.cc-list-item small{color:#ff5967}.cc-list-item button{border:0;background:none;color:#16a9ff;cursor:pointer}.cc-achievements,.cc-activity{min-height:188px}.cc-achievement,.cc-activity-item{display:flex;align-items:center;gap:10px;padding:10px 3px;border-bottom:1px solid rgba(95,146,190,.11)}.cc-ach-icon{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#0c6dd4}.cc-achievement strong,.cc-activity-item strong{font-size:10px;display:block}.cc-achievement small,.cc-activity-item small{font-size:9px;color:#0fa5ff}.cc-achievement .pts{margin-left:auto;color:#74ea45;font-weight:800;font-size:10px}.cc-rank-big{display:flex;align-items:end;gap:10px;margin-top:12px}.cc-rank-big strong{font-size:39px}.cc-rank-big span{color:#8aa1b8;font-size:10px;margin-bottom:7px}.cc-rank-big small{margin-left:auto;color:#8aa1b8;font-size:9px;margin-bottom:8px}.cc-rank-track{height:8px;background:#112b43;border-radius:99px;margin-top:12px;overflow:hidden}.cc-rank-track span{display:block;height:100%;width:50%;background:#1285ff;border-radius:99px}.cc-bottom-value{font-size:27px;font-weight:800;margin-top:13px}.cc-bottom-sub{display:flex;justify-content:space-between;font-size:9px;color:#7891aa;margin-top:2px}.cc-bottom-sub b{color:#fff}.cc-target-card{background:linear-gradient(135deg,#07499b,#0b5ed7)!important;display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center}.cc-target-icon{font-size:30px}.cc-target-card strong{font-size:13px}.cc-target-card p{font-size:10px;color:#cce5ff;margin:4px 0 0}.cc-target-card .cc-link-btn{grid-column:1/-1;background:rgba(0,0,0,.15)!important;color:#fff!important;border-color:rgba(255,255,255,.18)!important}.cc-report-grid{grid-template-columns:repeat(3,1fr)}.report-line{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid rgba(95,146,190,.11);font-size:11px}.report-line b{color:#54c6ff}.report-big{font-size:25px;font-weight:800;margin:14px 0 5px}.table-wrap{overflow:auto}.table-wrap table{min-width:850px}.client-tools{margin:13px 0}.view{animation:ccfade .18s ease}@keyframes ccfade{from{opacity:.4;transform:translateY(3px)}to{opacity:1;transform:none}}
+@media(max-width:1200px){.cc-kpis{grid-template-columns:repeat(3,1fr)!important}.cc-main-grid,.cc-lower-grid,.cc-bottom-grid,.cc-report-grid{grid-template-columns:1fr 1fr}.cc-target-card{min-height:150px}}@media(max-width:750px){.cc-hero{display:block}.cc-hero-actions{margin-top:12px}.cc-kpis,.cc-main-grid,.cc-lower-grid,.cc-bottom-grid,.cc-report-grid{grid-template-columns:1fr!important}.cc-goals-content{align-items:flex-start}.cc-ring{width:125px;height:125px}.cc-ring>div{width:94px;height:94px}.cc-ring strong{font-size:25px}}
+</style>
+
+<style id="lifeplan-v7-access-style">
+.v7-login-actions{display:flex;gap:8px;margin-top:10px}.v7-login-actions button{flex:1}
+.v7-ghost{background:#061c31!important;border:1px solid rgba(76,165,255,.3)!important;color:#54c6ff!important}
+.v7-modal-bg{position:fixed;inset:0;background:rgba(0,8,18,.78);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:99999;padding:20px}.v7-modal-bg.open{display:flex}
+.v7-modal{width:min(560px,96vw);background:linear-gradient(145deg,#071a30,#0a2947);border:1px solid rgba(55,164,255,.25);border-radius:20px;padding:22px;box-shadow:0 30px 90px rgba(0,0,0,.45);color:#fff}.v7-modal h2{margin:0 0 5px;color:#fff!important}.v7-modal p{color:#8fa9c2;font-size:11px;line-height:1.5}.v7-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.v7-modal label{display:block;font-size:10px;color:#9bb4cc;margin:8px 0 5px}.v7-modal input,.v7-modal select{width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid #23435e;background:#041525;color:#fff}.v7-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:15px}.v7-status{margin-top:10px;padding:9px;border-radius:9px;font-size:10px;display:none}.v7-status.ok{display:block;background:rgba(44,180,100,.12);border:1px solid rgba(44,180,100,.25);color:#7bf29b}.v7-status.err{display:block;background:rgba(220,53,69,.12);border:1px solid rgba(220,53,69,.25);color:#ff8e99}
+.v7-security{margin-top:10px;padding:9px 11px;border:1px solid rgba(22,131,255,.18);background:rgba(7,32,54,.7);border-radius:10px;color:#8fa9c2;font-size:9px;line-height:1.45}.v7-security b{color:#54c6ff}.v7-tools{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.v7-tools button{font-size:9px!important;padding:7px 9px!important}
+@media(max-width:600px){.v7-grid{grid-template-columns:1fr}.v7-actions{flex-wrap:wrap}.v7-actions button{flex:1}}
+</style>
+
+<style id="v91-login-clean">
+#appShell{display:none!important}
+#appShell.active{display:block!important}
+#loginScreen{position:fixed!important;inset:0!important;z-index:99999!important}
+#loginScreen .login-card{position:relative;z-index:2}
+#loginError{white-space:normal;word-break:break-word}
+#btnLogin[disabled]{opacity:.65;cursor:wait}
+</style>
+
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="mark"></div>
+      <h1>LIFEPLAN2026</h1>
+      <div class="tag">FOCO • AÇÃO • RESULTADOS / FOCUS • ACTION • RESULTS</div>
+    </div>
+    <label>Usuário / Username</label>
+    <input type="text" id="loginUser" autocomplete="username" placeholder="usuário ou e-mail">
+    <label>Senha / Password</label>
+    <input type="password" id="loginPass" autocomplete="current-password" placeholder="••••••••">
+    <div id="loginError" class="login-error" style="display:none;"></div>
+    <button class="btn" style="width:100%;padding:12px;" id="btnLogin">Entrar / Sign in</button>
+  </div>
+</div>
+
+<!-- ============ APP SHELL ============ -->
+<div id="appShell">
+<div class="app-layout" id="appLayout">
+
+<aside class="sidebar" id="sidebar">
+  <button class="sidebar-toggle" id="sidebarToggle" title="Recolher/expandir menu">‹</button>
+  <div class="sidebar-brand">
+    <div class="mark"></div>
+    <h1>LIFEPLAN2026</h1>
+    <div class="tag">FOCO • AÇÃO • RESULTADOS<br>FOCUS • ACTION • RESULTS</div>
+  </div>
+  <nav class="tabs-vertical">
+    <button class="tab-btn active" data-tab="dashboard" data-icon="📊"><span class="ico">📊</span><span class="lbl">Dashboard</span></button>
+    <button class="tab-btn" data-tab="membros" data-icon="👤"><span class="ico">👤</span><span class="lbl">Área de Membros</span></button>
+    <button class="tab-btn" data-tab="clientes" data-icon="👥"><span class="ico">👥</span><span class="lbl">Clientes / Clients</span></button>
+    <button class="tab-btn" data-tab="followups" data-icon="📞"><span class="ico">📞</span><span class="lbl">Follow-ups</span></button>
+    <button class="tab-btn" data-tab="apolices" data-icon="📄"><span class="ico">📄</span><span class="lbl">Apólices / Policies</span></button>
+    <button class="tab-btn" data-tab="relatorios" data-icon="📈"><span class="ico">📈</span><span class="lbl">Relatórios / Reports</span></button>
+    <button class="tab-btn" data-tab="metas" data-icon="🎯"><span class="ico">🎯</span><span class="lbl">Metas & Agentes</span></button>
+  </nav>
+  <div class="sidebar-footer">LIFEPLAN2026<br>dados salvos automaticamente</div>
+</aside>
+
+<main class="main-content">
+
+<div class="topbar">
+  <select id="filterAgent"></select>
+  <select id="filterMonth"></select>
+  <span id="dbStatusChip" class="session-chip" style="cursor:default;" title=""><span class="role-dot" id="dbStatusDot" style="background:#a8442e;"></span><span id="dbStatusLabel">Somente local</span></span>
+  <div class="session-chip"><span class="role-dot"></span><span id="sessionLabel">—</span><button id="btnProfile" style="display:none;">Meu Perfil</button><button id="btnLogout">Sair</button></div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="view active" id="view-dashboard">
+  <div class="cc-hero">
+    <div><div class="cc-kicker">LIFEPLAN2026 • SALES COMMAND CENTER</div><h1>Bem-vindo, Agente! 👋</h1><p>Aqui está o seu desempenho de hoje. / Here is your performance today.</p></div>
+    <div class="cc-hero-actions"><div class="cc-date">📅 <strong id="ccToday">—</strong><span id="ccDay">—</span></div><div class="cc-date">📆 <strong>Este Mês</strong><span id="ccMonth">—</span></div></div>
+  </div>
+
+  <div class="kpi-row cc-kpis">
+    <div class="kpi cc-kpi blue"><div class="cc-icon">👥</div><div class="lbl">NOVOS CLIENTES<br><span>NEW CLIENTS</span></div><div class="val" id="kpiNewClients">0</div><div class="cc-meta"><span>Meta: <b id="ccGoalClients">0</b></span><b id="ccPctClients">0%</b></div><div class="cc-progress"><span id="ccBarClients"></span></div></div>
+    <div class="kpi cc-kpi green"><div class="cc-icon">📞</div><div class="lbl">FOLLOW-UPS HOJE<br><span>TODAY'S FOLLOW-UPS</span></div><div class="val" id="kpiToday">0</div><div class="cc-meta"><span>Total: <b id="ccTotalFollow">0</b></span><b id="ccPctFollow">0%</b></div><div class="cc-progress"><span id="ccBarFollow"></span></div></div>
+    <div class="kpi cc-kpi orange"><div class="cc-icon">🛡️</div><div class="lbl">APÓLICES EMITIDAS<br><span>POLICIES ISSUED</span></div><div class="val" id="kpiIssued">0</div><div class="cc-meta"><span>Meta: <b id="ccGoalPolicies">0</b></span><b id="ccPctPolicies">0%</b></div><div class="cc-progress"><span id="ccBarPolicies"></span></div></div>
+    <div class="kpi cc-kpi green"><div class="cc-icon">💵</div><div class="lbl">PRÊMIO TOTAL (USD)<br><span>TOTAL PREMIUM (USD)</span></div><div class="val" id="kpiPremium">$0</div><div class="cc-meta"><span>Meta: <b id="ccGoalPremium">$0</b></span><b id="ccPctPremium">0%</b></div><div class="cc-progress"><span id="ccBarPremium"></span></div></div>
+    <div class="kpi cc-kpi purple"><div class="cc-icon">🏆</div><div class="lbl">COMISSÃO (USD)<br><span>COMMISSION (USD)</span></div><div class="val" id="kpiCommission">$0</div><div class="cc-meta"><span>Meta: <b id="ccGoalCommission">$0</b></span><b id="ccPctCommission">0%</b></div><div class="cc-progress"><span id="ccBarCommission"></span></div></div>
+  </div>
+
+  <div class="cc-grid cc-main-grid">
+    <div class="card cc-goals-panel"><div class="cc-title"><span>MINHAS METAS</span><em>/ MY GOALS</em></div><div class="cc-goals-content"><div class="cc-ring" id="ccOverallRing"><div><strong id="ccOverallPct">0%</strong><small>GERAL<br>OVERALL</small></div></div><div class="cc-goal-lines" id="ccGoalLines"></div></div><div class="cc-motivation"><span>🎯</span><div><strong id="ccMotivationTitle">MANTENHA O FOCO!</strong><small id="ccMotivationText">Siga na direção certa.</small></div></div></div>
+    <div class="card cc-funnel-panel"><div class="cc-title"><span>FUNIL DE VENDAS</span><em>/ SALES PIPELINE</em></div><div id="funnelBlock" class="cc-funnel"></div><div class="cc-total" id="ccFunnelTotal">TOTAL: 0</div></div>
+    <div class="card cc-rank-panel"><div class="cc-title"><span>RANKING DE DESEMPENHO</span><em>/ TOP AGENTS</em></div><div class="cc-rank-head"><span>POS.</span><span>AGENTE</span><span>PRÊMIO</span><span>APÓLICES</span><span>COMISSÃO</span></div><div id="ccTopRanking"></div><button class="cc-link-btn" id="ccViewRanking">VER RANKING COMPLETO / VIEW FULL RANKING</button></div>
+  </div>
+
+  <div class="cc-grid cc-lower-grid">
+    <div class="card"><div class="cc-title"><span>FOLLOW-UPS</span><em>/ ACOMPANHAMENTOS</em></div><div class="cc-tabs"><button class="active" data-fut="overdue">ATRASADOS (<b id="ccFuOverdue">0</b>)</button><button data-fut="today">HOJE (<b id="ccFuToday">0</b>)</button><button data-fut="next">PRÓX. 7 DIAS (<b id="ccFuNext">0</b>)</button></div><div id="ccFollowList" class="cc-list"></div><button class="cc-link-btn" id="ccViewFollowups">VER TODOS / VIEW ALL</button></div>
+    <div class="card"><div class="cc-title"><span>CONQUISTAS RECENTES</span><em>/ RECENT ACHIEVEMENTS</em></div><div id="ccAchievements" class="cc-achievements"></div><button class="cc-link-btn">VER TODAS / VIEW ALL</button></div>
+    <div class="card"><div class="cc-title"><span>ATIVIDADES RECENTES</span><em>/ RECENT ACTIVITY</em></div><div id="ccActivity" class="cc-activity"></div><button class="cc-link-btn">VER TODAS / VIEW ALL</button></div>
+  </div>
+
+  <div class="cc-grid cc-bottom-grid">
+    <div class="card cc-rank-position"><div class="cc-title"><span>SUA POSIÇÃO NO RANKING</span><em>/ YOUR RANK</em></div><div class="cc-rank-big"><strong id="ccMyRank">—</strong><span id="ccRankAgents">de 0 agentes</span><small id="ccRankGap">—</small></div><div class="cc-rank-track"><span id="ccRankTrack"></span></div></div>
+    <div class="card"><div class="cc-title"><span>PRODUÇÃO DO MÊS</span><em>/ MONTHLY PRODUCTION</em></div><div class="cc-bottom-value" id="ccMonthPremium">$0</div><div class="cc-bottom-sub"><span>de <b id="ccMonthPremiumGoal">$0</b></span><b id="ccMonthPremiumPct">0%</b></div><div class="cc-progress"><span id="ccMonthPremiumBar"></span></div></div>
+    <div class="card"><div class="cc-title"><span>COMISSÃO DO MÊS</span><em>/ MONTHLY COMMISSION</em></div><div class="cc-bottom-value" id="ccMonthCommission">$0</div><div class="cc-bottom-sub"><span>de <b id="ccMonthCommissionGoal">$0</b></span><b id="ccMonthCommissionPct">0%</b></div><div class="cc-progress"><span id="ccMonthCommissionBar"></span></div></div>
+    <div class="card cc-target-card"><div class="cc-target-icon">🎯</div><div><strong id="ccTargetHeadline">VOCÊ ESTÁ 0% DA META!</strong><p id="ccTargetText">Falta(m) $0 para bater a meta mensal.</p></div><button class="cc-link-btn" id="ccViewGoals">VER METAS COMPLETAS</button></div>
+  </div>
+
+  <div class="card" style="margin-top:14px"><div class="cc-title"><span>PRODUÇÃO POR MÊS</span><em>/ PREMIUM TREND</em></div><div id="premiumBarChart"></div></div>
+</div>
+<div class="view" id="view-membros">
+  <div class="card">
+    <div class="member-header">
+      <div class="who">
+        <div class="avatar" id="memberAvatar">?</div>
+        <div>
+          <h2 id="memberName">—</h2>
+          <div class="sub" style="margin-bottom:0;">Cada agente trabalha com seus próprios clientes, follow-ups e produção.</div>
+        </div>
+      </div>
+      <select id="memberSelect"></select>
+    </div>
+
+    <div class="kpi-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px;">
+      <div class="kpi"><div class="lbl">Clientes / Clients</div><div class="val" id="memClientes">0</div></div>
+      <div class="kpi accent-teal"><div class="lbl">Apólices / Policies</div><div class="val" id="memApolices">0</div></div>
+      <div class="kpi accent-teal"><div class="lbl">Premium USD</div><div class="val" id="memPremium">$0</div></div>
+      <div class="kpi accent-brass"><div class="lbl">Comissão USD</div><div class="val" id="memComissao">$0</div></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h2>Metas & Conquistas</h2>
+        <div class="sub">Minhas metas / My goals</div>
+        <div id="memberGoals"></div>
+      </div>
+      <div class="card">
+        <h2>Meu Funil</h2>
+        <div class="sub">My pipeline distribution</div>
+        <div class="chart-flex" id="memberDonut"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <h2>Premium por Mês</h2>
+      <div class="sub">Minha produção mensal</div>
+      <div id="memberPremiumChart"></div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <div>
+          <h2>Meus Clientes / My Clients</h2>
+          <div class="sub">Somente os clientes atribuídos a este agente.</div>
+        </div>
+        <button class="btn" id="btnAddClientMember">+ Novo cliente</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Nome</th><th>Estado</th><th>Tipo de Seguro</th><th class="num">Prêmio Mensal</th><th>Status</th><th>Próx. Contato</th><th></th></tr></thead>
+          <tbody id="memberClientBody"></tbody>
+        </table>
+      </div>
+      <div id="memberClientEmpty" class="empty-state" style="display:none;">
+        <h3>Nenhum cliente ainda</h3>
+        <p>Adicione o primeiro cliente deste agente.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENTES -->
+<div class="view" id="view-clientes">
+  <div class="card">
+    <div class="toolbar">
+      <div>
+        <h2>Clientes</h2>
+        <div class="sub">Cada linha é um cliente e sua jornada — do primeiro contato até a apólice emitida.</div>
+      </div>
+      <div class="client-tools">
+        <input class="client-search" id="clientSearch" type="search" placeholder="Buscar nome, telefone, cidade ou apólice...">
+        <select id="clientStatusFilter"></select>
+        <button class="btn" id="btnAddClient">+ Novo cliente</button>
+        <button class="btn secondary" id="btnRemoveDemoClients" style="margin-left:8px;">🧹 Remover clientes fictícios</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Nome</th><th>Estado</th><th>Tipo de Seguro</th><th class="num">Cobertura</th><th class="num">Prêmio Mensal</th>
+          <th>Status</th><th>Próx. Contato</th><th>Agente</th><th class="num">Comissão</th><th></th>
+        </tr></thead>
+        <tbody id="clientBody"></tbody>
+      </table>
+    </div>
+    <div id="clientEmpty" class="empty-state" style="display:none;">
+      <h3>Nenhum cliente ainda</h3>
+      <p>Adicione seu primeiro cliente para começar a preencher o funil e o dashboard.</p>
+    </div>
+  </div>
+</div>
+
+<!-- METAS -->
+<div class="view" id="view-followups">
+  <div class="card"><div class="cc-title"><span>FOLLOW-UPS</span><em>/ ACOMPANHAMENTOS</em></div><div class="client-tools"><input class="client-search" id="fuSearch" type="search" placeholder="Buscar cliente..."><select id="fuRange"><option value="all">Todos</option><option value="overdue">Atrasados</option><option value="today">Hoje</option><option value="next">Próximos 7 dias</option></select></div><div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Data</th><th>Status</th><th>Agente</th><th>Telefone</th><th>Ação</th></tr></thead><tbody id="fullFollowBody"></tbody></table></div></div>
+</div>
+<div class="view" id="view-apolices">
+  <div class="card"><div class="cc-title"><span>APÓLICES EMITIDAS</span><em>/ POLICIES ISSUED</em></div><div class="client-tools"><input class="client-search" id="policySearch" type="search" placeholder="Buscar cliente ou apólice..."><select id="policyAgentFilter"></select></div><div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Apólice</th><th>Companhia</th><th>Tipo</th><th>Cobertura</th><th>Prêmio</th><th>Comissão</th><th>Emissão</th><th>Agente</th></tr></thead><tbody id="policyBody"></tbody></table></div></div>
+</div>
+<div class="view" id="view-relatorios">
+  <div class="cc-grid cc-report-grid">
+    <div class="card"><div class="cc-title"><span>RESUMO DA PRODUÇÃO</span><em>/ PRODUCTION SUMMARY</em></div><div id="reportSummary"></div></div>
+    <div class="card"><div class="cc-title"><span>CONVERSÃO</span><em>/ CONVERSION</em></div><div id="reportConversion"></div></div>
+    <div class="card"><div class="cc-title"><span>TOP AGENTES</span><em>/ AGENT LEADERBOARD</em></div><div id="reportAgents"></div></div>
+  </div>
+</div>
+<div class="view" id="view-metas">
+  <div class="card" style="margin-bottom:16px;">
+    <h2>Progresso por Agente</h2>
+    <div class="sub">% médio de conquista sobre as 4 metas (clientes, apólices, prêmio, comissão)</div>
+    <div class="agent-goal-grid" id="agentGoalGrid"></div>
+    <h2 style="margin-top:6px;">Comissão por Agente</h2>
+    <div class="sub">Commission by agent</div>
+    <div id="commissionBarChart"></div>
+  </div>
+  <div class="card" id="adminCredCard" style="margin-bottom:16px;">
+    <h2>Credenciais do Administrador</h2>
+    <div class="sub">Usuário e senha mestres — usados só pelo Administrador para entrar.</div>
+    <div class="form-grid" style="max-width:420px;">
+      <div><label>Usuário</label><input type="text" id="admin_usuario"></div>
+      <div><label>Senha</label><input type="text" id="admin_senha"></div>
+    </div>
+    <div class="modal-actions" style="margin-top:14px;justify-content:flex-start;">
+      <button class="btn secondary small" id="btnSaveAdminCred">Salvar credenciais</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="toolbar">
+      <div>
+        <h2>Metas & Agentes</h2>
+        <div class="sub">Defina a meta mensal e o login de cada agente da agência.</div>
+      </div>
+      <button class="btn" id="btnAddAgent">+ Novo agente</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Agente</th><th>Usuário</th><th>Senha</th><th class="num">Meta Clientes</th><th class="num">Meta Apólices</th><th class="num">Meta Prêmio USD</th><th class="num">Meta Comissão USD</th><th>Ativo</th><th></th>
+        </tr></thead>
+        <tbody id="agentBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="footer-note">LIFEPLAN2026 · dados salvos automaticamente neste navegador</div>
+
+</main>
+</div> <!-- /app-layout -->
+</div> <!-- /appShell -->
+
+<!-- Client Modal -->
+<div class="modal-bg" id="clientModalBg">
+  <div class="modal">
+    <h2 id="clientModalTitle">Novo cliente</h2>
+    <div class="form-grid">
+      <div><label>Nome / Name</label><input type="text" id="cf_nome"></div>
+      <div><label>SSN</label><input type="text" id="cf_ssn" placeholder="Opcional"></div>
+      <div><label>Estado / State</label><select class="cell" id="cf_estado"></select></div>
+      <div><label>Cidade / City</label><input type="text" id="cf_cidade"></div>
+      <div><label>Telefone / Phone</label><input type="text" id="cf_telefone"></div>
+      <div><label>E-mail / Email</label><input type="email" id="cf_email"></div>
+      <div><label>Beneficiário / Beneficiary</label><input type="text" id="cf_beneficiario"></div>
+      <div><label>Parentesco do Beneficiário</label><input type="text" id="cf_parentesco"></div>
+      <div><label>Tipo de Seguro</label><select class="cell" id="cf_tipo"></select></div>
+      <div><label>Companhia de Seguros</label><input type="text" id="cf_companhia"></div>
+      <div><label>Valor da Cobertura (USD)</label><input type="number" id="cf_cobertura"></div>
+      <div><label>Prêmio Mensal (USD)</label><input type="number" id="cf_premio"></div>
+      <div><label>Status</label><select class="cell" id="cf_status"></select></div>
+      <div><label>Método de Contato</label><select class="cell" id="cf_metodo"></select></div>
+      <div><label>Data do Contato</label><input type="date" id="cf_datacontato"></div>
+      <div><label>Próximo Contato</label><input type="date" id="cf_proxcontato"></div>
+      <div><label>Resultado do Contato</label><input type="text" id="cf_resultado" placeholder="Ex.: falou, cotação enviada..."></div>
+      <div><label>Data da Aplicação</label><input type="date" id="cf_dataaplicacao"></div>
+      <div><label>Data de Emissão</label><input type="date" id="cf_dataemissao"></div>
+      <div><label>Número da Apólice</label><input type="text" id="cf_apolice"></div>
+      <div><label>Comissão (% do prêmio mensal)</label><select class="cell" id="cf_comissaoPct"></select></div>
+      <div><label>Meses de Comissão</label><select class="cell" id="cf_comissaoMeses"><option value="6">6 meses</option><option value="9">9 meses</option></select></div>
+      <div class="full"><label>Comissão calculada (USD)</label><input type="text" id="cf_comissaoPreview" disabled></div>
+      <div><label>Agente / Agent</label><select class="cell" id="cf_agente"></select></div>
+      <div class="full"><label>Observações / Notes</label><input type="text" id="cf_obs"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" id="cf_cancel">Cancelar</button>
+      <button class="btn" id="cf_save">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Agent Modal -->
+<div class="modal-bg" id="agentModalBg">
+  <div class="modal" style="max-width:440px;">
+    <h2>Novo agente</h2>
+    <div class="form-grid">
+      <div class="full"><label>Nome do Agente</label><input type="text" id="af_nome"></div>
+      <div><label>Usuário / Username</label><input type="text" id="af_usuario" placeholder="usuário ou e-mail"></div>
+      <div><label>Senha / Password</label><input type="text" id="af_senha" placeholder="ex.: 1234"></div>
+      <div><label>Meta Clientes</label><input type="number" id="af_metaclientes" value="40"></div>
+      <div><label>Meta Apólices</label><input type="number" id="af_metaapolices" value="10"></div>
+      <div><label>Meta Prêmio USD</label><input type="number" id="af_metapremio" value="50000"></div>
+      <div><label>Meta Comissão USD</label><input type="number" id="af_metacomissao" value="10000"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" id="af_cancel">Cancelar</button>
+      <button class="btn" id="af_save">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="profileModalBg">
+  <div class="modal" style="max-width:440px;">
+    <h2>Meu Perfil</h2>
+    <div class="sub" id="pf_nome_label" style="margin-bottom:10px;"></div>
+    <div class="form-grid">
+      <div><label>Meta Clientes</label><input type="number" id="pf_metaclientes"></div>
+      <div><label>Meta Apólices</label><input type="number" id="pf_metaapolices"></div>
+      <div><label>Meta Prêmio USD</label><input type="number" id="pf_metapremio"></div>
+      <div><label>Meta Comissão USD</label><input type="number" id="pf_metacomissao"></div>
+      <div class="full"><label>Nova senha (deixe em branco para manter)</label><input type="text" id="pf_senha" placeholder="••••••"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" id="pf_cancel">Cancelar</button>
+      <button class="btn" id="pf_save">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const LISTS = {
+  states: ["Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia","Wisconsin","Wyoming"],
+  status: ["New Lead / Novo Lead","Contacted / Contatado","Follow-up / Acompanhamento","Quoted / Cotação","Application / Aplicação","Approved / Aprovado","Declined / Recusado","Issued / Emitida","Not Interested / Não Interessado","Not Qualified / Não Qualificado","Lost / Perdido"],
+  insuranceTypes: ["Term Life / Seguro de Vida Temporário","Whole Life / Seguro de Vida Permanente","Universal Life / Seguro de Vida Universal","Indexed Universal Life (IUL) / Vida Universal Indexada (IUL)","Final Expense / Despesas Finais","Mortgage Protection / Proteção de Hipoteca","Other / Outro"],
+  contactMethods: ["Phone / Telefone","Text / Mensagem","Email / E-mail","In Person / Presencial","Video Call / Videochamada","Other / Outro"],
+  funnelStages: ["New Lead / Novo Lead","Contacted / Contatado","Follow-up / Acompanhamento","Quoted / Cotação","Application / Aplicação","Approved / Aprovado","Issued / Emitida"]
+};
+const STATUS_COLORS = {
+  "New Lead / Novo Lead":{bg:"#e4ebe3",fg:"#41564a",dot:"#94a897"},
+  "Contacted / Contatado":{bg:"#d7e9e5",fg:"#215951",dot:"#3f7c74"},
+  "Follow-up / Acompanhamento":{bg:"#e7cf9c",fg:"#6b4f10",dot:"#b3872c"},
+  "Quoted / Cotação":{bg:"#f3ddd6",fg:"#8a3d29",dot:"#c17255"},
+  "Application / Aplicação":{bg:"#e0d6f0",fg:"#4d3a75",dot:"#8a6bc4"},
+  "Approved / Aprovado":{bg:"#d3e6c8",fg:"#365423",dot:"#6d9b4a"},
+  "Declined / Recusado":{bg:"#f3ddd6",fg:"#a8442e",dot:"#a8442e"},
+  "Issued / Emitida":{bg:"#b3872c",fg:"#ffffff",dot:"#b3872c"},
+  "Not Interested / Não Interessado":{bg:"#eee",fg:"#777",dot:"#aaa"},
+  "Not Qualified / Não Qualificado":{bg:"#eee",fg:"#777",dot:"#aaa"},
+  "Lost / Perdido":{bg:"#eee",fg:"#777",dot:"#999"}
+};
+
+function cid(){ return 'id_' + Math.random().toString(36).slice(2,10); }
+function slugUser(nome){
+  return nome.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z ]/g,'').trim().replace(/\s+/g,'.');
+}
+const DEFAULT_PASSWORD = "1234";
+const DEFAULT_AGENTS = [].map(nome=>({
+  id:cid(), nome, metaClientes:40, metaApolices:10, metaPremio:50000, metaComissao:10000, ativo:true,
+  usuario: slugUser(nome), senha: DEFAULT_PASSWORD
+}));
+const DEFAULT_ADMIN = { usuario:"admin", senha:"admin123" };
+
+let STATE = { agents: [], clients: [] };
+let SESSION = null; // {role:'admin'} or {role:'agent', nome:'...'}
+let editingClientId = null;
+let memberModalContext = null; // 'member' when opened from member area
+
+const STORAGE_KEY = 'lifeplan2026_data';
+const SESSION_KEY = 'lifeplan2026_session';
+
+/* ---------- Supabase (banco de dados na nuvem) ----------
+   Preencha as duas linhas abaixo com os valores do seu projeto Supabase
+   (Project Settings → API → Project URL / anon public key).
+   Enquanto estiverem vazias, o app funciona salvando só neste navegador. */
+const SUPABASE_URL = "https://blwsbadbvualfgtdapvm.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_1Y3X9x9VEMd4LNUD1g27wg_FBFzESP_";
+let supabaseClient = null;
+function describeSupabaseError(e){
+  if(!e) return 'erro desconhecido';
+  const parts = [e.message, e.details, e.hint, e.code].filter(Boolean);
+  return parts.length ? parts.join(' | ') : (typeof e==='string' ? e : JSON.stringify(e));
+}
+if (SUPABASE_URL && SUPABASE_ANON_KEY && typeof supabase !== 'undefined') {
+  try { supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }
+  catch(e){ console.error('Falha ao iniciar o Supabase, usando armazenamento local: ' + describeSupabaseError(e)); }
+}
+
+/* ---------- local persistence (works both inside Claude.ai artifacts and as a standalone downloaded file) ---------- */
+async function storageGet(key){
+  if(typeof window.storage!=='undefined' && window.storage){
+    try{ const res=await window.storage.get(key); return res? res.value : null; }catch(e){ return null; }
+  }
+  try{ return localStorage.getItem(key); }catch(e){ return null; }
+}
+async function storageSet(key, value){
+  if(typeof window.storage!=='undefined' && window.storage){
+    try{ await window.storage.set(key, value); return true; }catch(e){ console.error('storage.set failed',e); return false; }
+  }
+  try{ localStorage.setItem(key, value); return true; }catch(e){ console.error('localStorage.setItem failed',e); return false; }
+}
+let supabaseLastError = null;
+let supabaseOnline = false;
+async function loadState(){
+  let loaded=false;
+  if(supabaseClient){
+    try{
+      const { data, error } = await supabaseClient.from('app_state').select('data').eq('id',1).single();
+      if(error) throw error;
+      supabaseOnline = true;
+      if(data && data.data && Object.keys(data.data).length){
+        STATE = data.data;
+        if(!STATE.agents) STATE.agents=[];
+        if(!STATE.clients) STATE.clients=[];
+        loaded = true;
+      }
+    }catch(e){ supabaseOnline = false; supabaseLastError = describeSupabaseError(e); console.error('Falha ao carregar do Supabase, tentando dados locais: ' + supabaseLastError); }
+  }
+  if(!loaded){
+    try{
+      const raw = await storageGet(STORAGE_KEY);
+      if(raw){ STATE = JSON.parse(raw); if(!STATE.agents) STATE.agents=[]; if(!STATE.clients) STATE.clients=[]; loaded=true; }
+    }catch(e){ console.error('loadState parse failed', e); }
+  }
+  if(!loaded){
+    STATE = { agents: JSON.parse(JSON.stringify(DEFAULT_AGENTS)), clients: [], admin: {...DEFAULT_ADMIN} };
+  }
+  if(!STATE.admin) STATE.admin = {...DEFAULT_ADMIN};
+  let migrated = !loaded;
+  if(!STATE._credentialsResetV1){
+    STATE.admin = {...DEFAULT_ADMIN};
+    STATE.agents.forEach(a=>{
+      const original = DEFAULT_AGENTS.find(d=>d.nome===a.nome);
+      a.usuario = original ? original.usuario : slugUser(a.nome);
+      a.senha = original ? original.senha : DEFAULT_PASSWORD;
+    });
+    STATE._credentialsResetV1 = true;
+    migrated = true;
+  }
+  STATE.agents.forEach(a=>{
+    if(!a.usuario){ a.usuario = slugUser(a.nome); migrated = true; }
+    if(!a.senha){ a.senha = DEFAULT_PASSWORD; migrated = true; }
+  });
+  if(migrated) await saveState();
+}
+async function saveState(){
+  if(supabaseClient){
+    try{
+      const { error } = await supabaseClient.from('app_state').upsert({ id:1, data: STATE, updated_at: new Date().toISOString() });
+      if(error) throw error;
+      supabaseOnline = true;
+    }catch(e){ supabaseOnline = false; supabaseLastError = describeSupabaseError(e); console.error('Falha ao salvar no Supabase — os dados ficaram só neste navegador por enquanto: ' + supabaseLastError); }
+  }
+  await storageSet(STORAGE_KEY, JSON.stringify(STATE));
+  updateDbStatusChip();
+}
+async function loadSession(){ try{ const raw=await storageGet(SESSION_KEY); return raw? JSON.parse(raw): null; }catch(e){ return null; } }
+async function saveSession(sess){ await storageSet(SESSION_KEY, JSON.stringify(sess)); }
+
+function fillSelect(sel, options, withAllLabel){
+  sel.innerHTML = '';
+  if(withAllLabel){
+    const o = document.createElement('option'); o.value=''; o.textContent = withAllLabel; sel.appendChild(o);
+  }
+  options.forEach(v=>{
+    const o = document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o);
+  });
+}
+function fmtMoney(n){
+  n = Number(n)||0;
+  return '$' + n.toLocaleString('en-US', {maximumFractionDigits:0});
+}
+function todayStr(){ const d = new Date(); d.setHours(0,0,0,0); return d.toISOString().slice(0,10); }
+function daysDiff(dateStr){
+  const d = new Date(dateStr+'T00:00:00');
+  const t = new Date(todayStr()+'T00:00:00');
+  return Math.round((d-t)/86400000);
+}
+function monthKey(dateStr){ if(!dateStr) return null; return dateStr.slice(0,7); }
+function monthLabel(key){
+  const [y,m] = key.split('-');
+  const names = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+  return names[parseInt(m,10)-1] + '/' + y;
+}
+function initials(name){
+  if(!name) return '?';
+  return name.split(' ').filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');
+}
+
+/* ---------- chart helpers ---------- */
+function renderDonut(container, segments, opts={}){
+  const total = segments.reduce((s,x)=>s+x.value,0);
+  if(total===0){
+    container.innerHTML = `<div class="donut-empty">Sem dados ainda</div><div class="donut-legend"><div class="legend-row" style="opacity:.5">Adicione clientes para ver a distribuição</div></div>`;
+    return;
+  }
+  let cum=0;
+  const stops = segments.filter(s=>s.value>0).map(seg=>{
+    const start = (cum/total*360).toFixed(2);
+    cum += seg.value;
+    const end = (cum/total*360).toFixed(2);
+    return `${seg.color} ${start}deg ${end}deg`;
+  }).join(', ');
+  container.innerHTML = `
+    <div class="donut-wrap">
+      <div class="donut" style="background:conic-gradient(${stops});"></div>
+      <div class="donut-hole"><div class="donut-hole-val">${opts.centerValue??total}</div><div class="donut-hole-lbl">${opts.centerLabel??''}</div></div>
+    </div>
+    <div class="donut-legend">
+      ${segments.filter(s=>s.value>0).map(s=>`<div class="legend-row"><span class="dot" style="background:${s.color}"></span>${s.label}<span class="legend-val">${s.value}</span></div>`).join('')}
+    </div>`;
+}
+function renderBars(container, items, opts={}){
+  if(!items.length || items.every(i=>i.value===0)){
+    container.innerHTML = `<div class="bars-empty">Sem dados suficientes ainda / Not enough data yet</div>`;
+    return;
+  }
+  const max = Math.max(1, ...items.map(i=>i.value));
+  container.innerHTML = `<div class="bars-row">` + items.map(i=>{
+    const h = Math.max(2, Math.round((i.value/max)*100));
+    return `<div class="bar-col">
+      <div class="bar-value">${opts.fmt?opts.fmt(i.value):i.value}</div>
+      <div class="bar-outer"><div class="bar-inner" style="height:${h}%"></div></div>
+      <div class="bar-label">${i.label}</div>
+    </div>`;
+  }).join('') + `</div>`;
+}
+function miniDonut(pct){
+  const color = pct>=100 ? '#3f7c74' : pct>=60 ? '#b3872c' : '#a8442e';
+  return `<div class="adonut">
+    <div class="donut" style="background:conic-gradient(${color} 0deg ${pct*3.6}deg, #e4ebe3 ${pct*3.6}deg 360deg);"></div>
+    <div class="donut-hole"><div class="donut-hole-val">${pct}%</div><div class="donut-hole-lbl">meta</div></div>
+  </div>`;
+}
+
+/* ---------- data selectors ---------- */
+function getFilteredClients(){
+  const agent = document.getElementById('filterAgent').value;
+  const month = document.getElementById('filterMonth').value;
+  return STATE.clients.filter(c=>{
+    if(agent && c.agente !== agent) return false;
+    if(month){
+      const dm = monthKey(c.dataContato) === month;
+      const em = monthKey(c.dataEmissao) === month;
+      if(!dm && !em) return false;
+    }
+    return true;
+  });
+}
+function metricsFor(list){
+  return {
+    clientes: list.length,
+    apolices: list.filter(c=>c.status==='Issued / Emitida').length,
+    premium: list.reduce((s,c)=> s + (c.status==='Issued / Emitida' ? (Number(c.premioMensal)||0)*12 : 0), 0),
+    comissao: list.reduce((s,c)=> s + (Number(c.comissao)||0), 0),
+  };
+}
+function last6MonthsPremium(list){
+  const byMonth = {};
+  list.forEach(c=>{
+    if(c.status==='Issued / Emitida' && c.dataEmissao){
+      const k = monthKey(c.dataEmissao);
+      byMonth[k] = (byMonth[k]||0) + (Number(c.premioMensal)||0)*12;
+    }
+  });
+  const keys = Object.keys(byMonth).sort().slice(-6);
+  return keys.map(k=>({label: monthLabel(k), value: byMonth[k]}));
+}
+
+/* ---------- filters / role ---------- */
+function populateFilters(){
+  const agentSel = document.getElementById('filterAgent');
+  const prevAgent = agentSel.value;
+  fillSelect(agentSel, STATE.agents.map(a=>a.nome), 'Agente: Todos / All');
+  if(SESSION.role==='agent'){
+    agentSel.value = SESSION.nome;
+    agentSel.disabled = true;
+  } else {
+    agentSel.disabled = false;
+    if(prevAgent && Array.from(agentSel.options).some(o=>o.value===prevAgent)) agentSel.value = prevAgent;
+  }
+
+  const months = new Set();
+  STATE.clients.forEach(c=>{
+    if(c.dataContato) months.add(monthKey(c.dataContato));
+    if(c.dataEmissao) months.add(monthKey(c.dataEmissao));
+  });
+  const policyAgentSel=document.getElementById('policyAgentFilter'); if(policyAgentSel){ const pv=policyAgentSel.value; fillSelect(policyAgentSel, STATE.agents.map(a=>a.nome), 'Agente: Todos / All'); if(Array.from(policyAgentSel.options).some(o=>o.value===pv)) policyAgentSel.value=pv; }
+  const monthSel = document.getElementById('filterMonth');
+  const prevVal = monthSel.value;
+  const sorted = Array.from(months).sort();
+  monthSel.innerHTML='';
+  const allOpt = document.createElement('option'); allOpt.value=''; allOpt.textContent='Mês: Todos / All'; monthSel.appendChild(allOpt);
+  sorted.forEach(m=>{
+    const o = document.createElement('option'); o.value=m; o.textContent = monthLabel(m); monthSel.appendChild(o);
+  });
+  if(sorted.includes(prevVal)) monthSel.value = prevVal;
+}
+
+/* ---------- DASHBOARD ---------- */
+function renderKPIs(){
+  const list = getFilteredClients();
+  const m = metricsFor(list);
+  const overdue = list.filter(c=>c.proxContato && daysDiff(c.proxContato) < 0).length;
+  const today = list.filter(c=>c.proxContato && daysDiff(c.proxContato) === 0).length;
+  document.getElementById('kpiNewClients').textContent = m.clientes;
+  document.getElementById('kpiToday').textContent = today;
+  document.getElementById('kpiIssued').textContent = m.apolices;
+  document.getElementById('kpiPremium').textContent = fmtMoney(m.premium);
+  document.getElementById('kpiCommission').textContent = fmtMoney(m.comissao);
+}
+function renderPremiumChart(){
+  const list = getFilteredClients();
+  renderBars(document.getElementById('premiumBarChart'), last6MonthsPremium(list), {fmt:fmtMoney});
+}
+
+/* ---------- ÁREA DE MEMBROS ---------- */
+function populateMemberSelect(){
+  const sel = document.getElementById('memberSelect');
+  fillSelect(sel, STATE.agents.map(a=>a.nome));
+  if(SESSION.role==='agent'){
+    sel.value = SESSION.nome;
+    sel.disabled = true;
+  } else {
+    sel.disabled = false;
+    if(!Array.from(sel.options).some(o=>o.value===sel.dataset.current)){
+      sel.value = STATE.agents[0]?.nome || '';
+    } else {
+      sel.value = sel.dataset.current;
+    }
+  }
+}
+function currentMember(){
+  return document.getElementById('memberSelect').value;
+}
+function paintGoalRows(container, m, goals){
+  if(!container) return;
+  const rows = [
+    ['Clientes', m.clientes||0, goals.clientes||0, v=>String(v)],
+    ['Apólices', m.apolices||0, goals.apolices||0, v=>String(v)],
+    ['Prêmio', m.premium||0, goals.premium||0, fmtMoney],
+    ['Comissão', m.comissao||0, goals.comissao||0, fmtMoney],
+  ];
+  container.innerHTML = rows.map(([label, val, goal, fmt])=>{
+    const p = goal ? Math.min(100, Math.round(val/goal*100)) : 0;
+    return `<div class="goal-row"><div class="goal-top"><span>${label}</span><span class="nums">${fmt(val)} / ${fmt(goal)} · ${p}%</span></div><div class="bar-track"><div class="bar-fill" style="width:${p}%"></div></div></div>`;
+  }).join('');
+}
+function renderMemberArea(){
+  populateMemberSelect();
+  const memberSel = document.getElementById('memberSelect');
+  const name = memberSel.value;
+  document.getElementById('memberName').textContent = name || '—';
+  document.getElementById('memberAvatar').textContent = initials(name);
+
+  const agent = STATE.agents.find(a=>a.nome===name);
+  const list = STATE.clients.filter(c=>c.agente===name);
+  const m = metricsFor(list);
+  document.getElementById('memClientes').textContent = m.clientes;
+  document.getElementById('memApolices').textContent = m.apolices;
+  document.getElementById('memPremium').textContent = fmtMoney(m.premium);
+  document.getElementById('memComissao').textContent = fmtMoney(m.comissao);
+
+  paintGoalRows(document.getElementById('memberGoals'), m, {
+    clientes: agent?.metaClientes||0, apolices: agent?.metaApolices||0,
+    premium: agent?.metaPremio||0, comissao: agent?.metaComissao||0
+  });
+
+  const segs = LISTS.status.map(s=>({label:s.split(' / ')[0], value: list.filter(c=>c.status===s).length, color: STATUS_COLORS[s].dot}));
+  renderDonut(document.getElementById('memberDonut'), segs, {centerLabel:'clientes', centerValue:list.length});
+
+  renderBars(document.getElementById('memberPremiumChart'), last6MonthsPremium(list), {fmt:fmtMoney});
+
+  const tbody = document.getElementById('memberClientBody');
+  tbody.innerHTML = '';
+  document.getElementById('memberClientEmpty').style.display = list.length===0 ? 'block':'none';
+  list.forEach(c=>{
+    const colors = STATUS_COLORS[c.status] || {bg:'#eee',fg:'#555'};
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${c.nome||'—'}</strong></td>
+      <td>${c.estado||'—'}</td>
+      <td>${(c.tipoSeguro||'—').split(' / ')[0]}</td>
+      <td class="num">${c.premioMensal?fmtMoney(c.premioMensal):'—'}</td>
+      <td><span class="status-pill" style="background:${colors.bg};color:${colors.fg}">${(c.status||'—').split(' / ')[0]}</span></td>
+      <td>${c.proxContato||'—'}</td>
+      <td><button class="btn secondary small" data-edit="${c.id}">Editar</button></td>`;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('[data-edit]').forEach(b=> b.addEventListener('click', ()=> openClientModal(b.dataset.edit, name)));
+}
+
+/* ---------- CLIENTES ---------- */
+function renderClients(){
+  const tbody = document.getElementById('clientBody');
+  tbody.innerHTML = '';
+  const base = SESSION.role==='agent' ? STATE.clients.filter(c=>c.agente===SESSION.nome) : STATE.clients;
+  const q = (document.getElementById('clientSearch')?.value || '').trim().toLowerCase();
+  const sf = document.getElementById('clientStatusFilter')?.value || '';
+  const list = base.filter(c=>{
+    if(sf && c.status!==sf) return false;
+    if(!q) return true;
+    return [c.nome,c.telefone,c.cidade,c.estado,c.email,c.numeroApolice,c.agente].some(v=>String(v||'').toLowerCase().includes(q));
+  });
+  document.getElementById('clientEmpty').style.display = list.length===0 ? 'block' : 'none';
+  list.forEach(c=>{
+    const colors = STATUS_COLORS[c.status] || {bg:'#eee',fg:'#555'};
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${c.nome||'—'}</strong></td>
+      <td>${c.estado||'—'}</td>
+      <td>${(c.tipoSeguro||'—').split(' / ')[0]}</td>
+      <td class="num">${c.coberturaValor?fmtMoney(c.coberturaValor):'—'}</td>
+      <td class="num">${c.premioMensal?fmtMoney(c.premioMensal):'—'}</td>
+      <td><span class="status-pill" style="background:${colors.bg};color:${colors.fg}">${(c.status||'—').split(' / ')[0]}</span></td>
+      <td>${c.proxContato||'—'}</td>
+      <td>${c.agente||'—'}</td>
+      <td class="num">${c.comissao?fmtMoney(c.comissao):'—'}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn secondary small" data-edit="${c.id}">Editar</button>
+        <button class="btn danger small" data-del="${c.id}">Excluir</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('[data-edit]').forEach(b=> b.addEventListener('click', ()=> openClientModal(b.dataset.edit)));
+  tbody.querySelectorAll('[data-del]').forEach(b=> b.addEventListener('click', async ()=>{
+    if(confirm('Excluir este cliente?')){
+      STATE.clients = STATE.clients.filter(c=>c.id!==b.dataset.del);
+      await saveState();
+      renderAll();
+    }
+  }));
+}
+
+/* ---------- METAS & AGENTES ---------- */
+function renderAgentGoalGrid(){
+  const grid = document.getElementById('agentGoalGrid');
+  grid.innerHTML = '';
+  STATE.agents.forEach(a=>{
+    const list = STATE.clients.filter(c=>c.agente===a.nome);
+    const m = metricsFor(list);
+    const goalTotal = (Number(a.metaClientes)||0)+(Number(a.metaApolices)||0)+(Number(a.metaPremio)||0)+(Number(a.metaComissao)||0);
+    const achTotal = Math.min(m.clientes,a.metaClientes||0)+Math.min(m.apolices,a.metaApolices||0)
+      + Math.min(m.premium,a.metaPremio||0) + Math.min(m.comissao,a.metaComissao||0);
+    const pct = goalTotal>0 ? Math.round((achTotal/goalTotal)*100) : 0;
+    const card = document.createElement('div');
+    card.className = 'agent-goal-card';
+    card.innerHTML = `${miniDonut(pct)}<div class="aname">${a.nome}</div>`;
+    grid.appendChild(card);
+  });
+}
+function renderCommissionChart(){
+  const items = STATE.agents.map(a=>{
+    const total = STATE.clients.filter(c=>c.agente===a.nome).reduce((s,c)=>s+(Number(c.comissao)||0),0);
+    return {label:a.nome.split(' ')[0], value: total};
+  });
+  renderBars(document.getElementById('commissionBarChart'), items, {fmt:fmtMoney});
+}
+function renderAgents(){
+  const tbody = document.getElementById('agentBody');
+  tbody.innerHTML='';
+  const isAdmin = SESSION.role==='admin';
+  STATE.agents.forEach(a=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${a.nome}</strong></td>
+      <td><input type="text" class="cell" data-cred="usuario" data-id="${a.id}" value="${a.usuario||''}" ${isAdmin?'':'disabled'}></td>
+      <td><input type="text" class="cell" data-cred="senha" data-id="${a.id}" value="${a.senha||''}" placeholder="Nova senha" ${isAdmin?'':'disabled'}></td>
+      <td class="num"><input type="number" class="cell" data-field="metaClientes" data-id="${a.id}" value="${a.metaClientes}" ${isAdmin?'':'disabled'}></td>
+      <td class="num"><input type="number" class="cell" data-field="metaApolices" data-id="${a.id}" value="${a.metaApolices}" ${isAdmin?'':'disabled'}></td>
+      <td class="num"><input type="number" class="cell" data-field="metaPremio" data-id="${a.id}" value="${a.metaPremio}" ${isAdmin?'':'disabled'}></td>
+      <td class="num"><input type="number" class="cell" data-field="metaComissao" data-id="${a.id}" value="${a.metaComissao}" ${isAdmin?'':'disabled'}></td>
+      <td><input type="checkbox" data-toggle="${a.id}" ${a.ativo?'checked':''} ${isAdmin?'':'disabled'}></td>
+      <td>${isAdmin?`<button class="btn danger small" data-delagent="${a.id}">Remover</button>`:''}</td>`;
+    tbody.appendChild(tr);
+  });
+  if(!isAdmin) return;
+  tbody.querySelectorAll('input[data-cred]').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      const a = STATE.agents.find(x=>x.id===inp.dataset.id);
+      const field = inp.dataset.cred;
+      const val = inp.value.trim();
+      if(!val){ alert('O campo não pode ficar vazio.'); renderAgents(); return; }
+      if(field==='usuario' && (STATE.agents.some(x=>x.id!==a.id && x.usuario===val) || val===STATE.admin.usuario)){
+        alert('Este usuário já está em uso.'); renderAgents(); return;
+      }
+      a[field] = val;
+      await saveState(); renderAll();
+    });
+  });
+  tbody.querySelectorAll('input[data-field]').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      const a = STATE.agents.find(x=>x.id===inp.dataset.id);
+      a[inp.dataset.field] = Number(inp.value)||0;
+      await saveState(); renderAll();
+    });
+  });
+  tbody.querySelectorAll('input[data-toggle]').forEach(chk=>{
+    chk.addEventListener('change', async ()=>{
+      const a = STATE.agents.find(x=>x.id===chk.dataset.toggle);
+      a.ativo = chk.checked;
+      await saveState(); renderAll();
+    });
+  });
+  tbody.querySelectorAll('[data-delagent]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      if(confirm('Remover este agente?')){
+        STATE.agents = STATE.agents.filter(a=>a.id!==b.dataset.delagent);
+        await saveState(); renderAll();
+      }
+    });
+  });
+}
+
+
+/* ---------- V6 exact command-center functions ---------- */
+function selectedAgentName(){ return document.getElementById('filterAgent').value || (SESSION.role==='agent' ? SESSION.nome : ''); }
+function selectedAgentObj(){ const n=selectedAgentName(); return STATE.agents.find(a=>a.nome===n) || null; }
+function goalForAgent(a){ return {clientes:Number(a?.metaClientes)||0,apolices:Number(a?.metaApolices)||0,premium:Number(a?.metaPremio)||0,comissao:Number(a?.metaComissao)||0}; }
+function goalsForSelection(){ const a=selectedAgentObj(); if(a) return goalForAgent(a); const gs=STATE.agents.filter(x=>x.ativo).map(goalForAgent); const s=k=>gs.reduce((t,g)=>t+(g[k]||0),0); return {clientes:s('clientes'),apolices:s('apolices'),premium:s('premium'),comissao:s('comissao')}; }
+function setPct(id, val){ const el=document.getElementById(id); if(el) el.textContent=Math.round(val)+'%'; }
+function setBar(id,val){ const el=document.getElementById(id); if(el) el.style.width=Math.min(100,Math.max(0,val))+'%'; }
+function renderCommandCenter(){
+  const list=getFilteredClients(), m=metricsFor(list), a=selectedAgentObj(), g=goalsForSelection();
+  const issued=list.filter(c=>c.status==='Issued / Emitida');
+  const follow=list.filter(c=>c.proxContato);
+  const today=follow.filter(c=>daysDiff(c.proxContato)===0).length;
+  const overdue=follow.filter(c=>daysDiff(c.proxContato)<0).length;
+  const totalFollow=follow.length;
+  const pct=(v,t)=>t?Math.min(100,Math.round(v/t*100)):0;
+  document.getElementById('ccToday').textContent=new Date().toLocaleDateString('pt-BR');
+  document.getElementById('ccDay').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long'});
+  document.getElementById('ccMonth').textContent=new Date().toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  const pc=pct(m.clientes,g.clientes), pp=pct(m.apolices,g.apolices), ppr=pct(m.premium,g.premium), pco=pct(m.comissao,g.comissao), pf=totalFollow?pct(today,totalFollow):0;
+  document.getElementById('ccGoalClients').textContent=g.clientes; document.getElementById('ccGoalPolicies').textContent=g.apolices; document.getElementById('ccGoalPremium').textContent=fmtMoney(g.premium); document.getElementById('ccGoalCommission').textContent=fmtMoney(g.comissao); document.getElementById('ccTotalFollow').textContent=totalFollow;
+  [['ccPctClients',pc],['ccPctPolicies',pp],['ccPctPremium',ppr],['ccPctCommission',pco],['ccPctFollow',pf]].forEach(x=>setPct(x[0],x[1]));
+  [['ccBarClients',pc],['ccBarPolicies',pp],['ccBarPremium',ppr],['ccBarCommission',pco],['ccBarFollow',pf]].forEach(x=>setBar(x[0],x[1]));
+  const overall=Math.round((pc+pp+ppr+pco)/4); document.getElementById('ccOverallPct').textContent=overall+'%'; document.getElementById('ccOverallRing').style.background=`conic-gradient(#1185ff ${overall*3.6}deg,#0d2b47 ${overall*3.6}deg 360deg)`;
+  document.getElementById('ccGoalLines').innerHTML=[['Novos Clientes / New Clients',m.clientes,g.clientes,pc],['Apólices Emitidas / Policies Issued',m.apolices,g.apolices,pp],['Prêmio Total / Total Premium',fmtMoney(m.premium),fmtMoney(g.premium),ppr],['Comissão / Commission',fmtMoney(m.comissao),fmtMoney(g.comissao),pco]].map(r=>`<div class="cc-goal-line"><span>${r[0]}</span><b>${r[1]} / ${r[2]}</b><span class="pct">${r[3]}%</span></div>`).join('');
+  document.getElementById('ccMotivationTitle').textContent=overall>=100?'META BATIDA! 🔥':overall>=75?'FALTA POUCO PARA BATER SUA META!':'MANTENHA O FOCO E A AÇÃO!';
+  document.getElementById('ccMotivationText').textContent=overall>=100?'Excelente produção. Agora vamos superar a meta.':`Você está ${overall}% da meta. Transforme follow-ups em aplicações.`;
+  renderCommandRanking(); renderCommandFollowups(); renderCommandAchievements(); renderCommandActivity(); renderCommandBottom();
+}
+function renderCommandRanking(){
+  const month=document.getElementById('filterMonth').value; const rows=STATE.agents.filter(a=>a.ativo).map(a=>{const own=STATE.clients.filter(c=>c.agente===a.nome && (!month || monthKey(c.dataContato)===month || monthKey(c.dataEmissao)===month));const m=metricsFor(own);const goal=(Number(a.metaPremio)||0)+(Number(a.metaComissao)||0);const pct=goal?((m.premium+m.comissao)/goal)*100:0;return {a,m,pct};}).sort((x,y)=>y.pct-x.pct);
+  document.getElementById('ccTopRanking').innerHTML=rows.slice(0,5).map((r,i)=>`<div class="cc-rank-row"><span class="medal">${i+1}</span><span class="${selectedAgentName()===r.a.nome?'me':''}">${r.a.nome}</span><span>${fmtMoney(r.m.premium)}</span><span>${r.m.apolices}</span><span>${fmtMoney(r.m.comissao)}</span></div>`).join('')||'<div class="empty">Nenhum agente.</div>';
+}
+function followItems(){const list=getFilteredClients().filter(c=>c.proxContato).sort((a,b)=>a.proxContato.localeCompare(b.proxContato));return {overdue:list.filter(c=>daysDiff(c.proxContato)<0),today:list.filter(c=>daysDiff(c.proxContato)===0),next:list.filter(c=>daysDiff(c.proxContato)>0&&daysDiff(c.proxContato)<=7)}}
+let ccFollowMode='overdue';
+function renderCommandFollowups(){const x=followItems();document.getElementById('ccFuOverdue').textContent=x.overdue.length;document.getElementById('ccFuToday').textContent=x.today.length;document.getElementById('ccFuNext').textContent=x.next.length;const arr=x[ccFollowMode]||[];document.getElementById('ccFollowList').innerHTML=arr.slice(0,6).map(c=>`<div class="cc-list-item"><strong>${c.nome||'—'}</strong><span>${c.proxContato}</span><small>${ccFollowMode==='overdue'?'ATRASADO':ccFollowMode==='today'?'HOJE':'PRÓXIMO'}</small><button onclick="openClientModal('${c.id}')">Abrir</button></div>`).join('')||'<div class="empty">Nenhum follow-up nesta fila.</div>'}
+function renderCommandAchievements(){const list=getFilteredClients(),m=metricsFor(list);const badges=[];if(m.apolices>=5)badges.push(['🛡️','META DE APÓLICES','5+ apólices emitidas!','+500 pts']);if(m.premium>=20000)badges.push(['💵','PRÊMIO DE $20K','Produção mensal ultrapas­sada!','+300 pts']);if(m.clientes>=7)badges.push(['⭐','SEMANA PRODUTIVA','7 clientes cadastrados!','+200 pts']);if(!badges.length)badges.push(['🎯','PRÓXIMA CONQUISTA','Continue produzindo para desbloquear.','+100 pts']);document.getElementById('ccAchievements').innerHTML=badges.map(x=>`<div class="cc-achievement"><span class="cc-ach-icon">${x[0]}</span><div><strong>${x[1]}</strong><small>${x[2]}</small></div><span class="pts">${x[3]}</span></div>`).join('')}
+function renderCommandActivity(){const list=getFilteredClients().slice().sort((a,b)=>(b.dataEmissao||b.dataContato||'').localeCompare(a.dataEmissao||a.dataContato||''));const items=list.slice(0,5).map(c=>{let icon='👥',txt=`Novo cliente cadastrado: ${c.nome}`;if(c.status==='Issued / Emitida'){icon='🛡️';txt=`Nova apólice emitida para ${c.nome}`}else if(c.status==='Follow-up / Acompanhamento'){icon='🟠';txt=`${c.nome} virou Follow-up`}else if(c.status==='Quoted / Cotação'){icon='📄';txt=`Proposta enviada para ${c.nome}`};return [icon,txt,c.proxContato||c.dataContato||''];});document.getElementById('ccActivity').innerHTML=items.map(x=>`<div class="cc-activity-item"><span class="cc-ach-icon">${x[0]}</span><div><strong>${x[1]}</strong><small>${x[2]}</small></div></div>`).join('')||'<div class="empty">Sem atividade registrada.</div>'}
+function renderCommandBottom(){const pct=(v,t)=>t?Math.min(100,Math.round(v/t*100)):0;const name=selectedAgentName(), rows=STATE.agents.filter(a=>a.ativo).map(a=>{const m=metricsFor(STATE.clients.filter(c=>c.agente===a.nome));return {nome:a.nome,m};}).sort((a,b)=>b.m.comissao-a.m.comissao);const pos=name?rows.findIndex(x=>x.nome===name)+1:0;document.getElementById('ccMyRank').textContent=pos?'#'+pos:'—';document.getElementById('ccRankAgents').textContent=`de ${rows.length} agentes`;const leader=rows[0];const me=pos?rows[pos-1]:null;document.getElementById('ccRankGap').textContent=me&&leader&&leader.nome!==me.nome?`Você está ${fmtMoney(Math.max(0,leader.m.premium-me.m.premium))} atrás do líder`:'Você está na liderança';setBar('ccRankTrack',rows.length?((rows.length-pos+1)/rows.length*100):0);const list=getFilteredClients(),m=metricsFor(list),a=selectedAgentObj(),g=goalsForSelection();const p=pct(m.premium,g.premium),pc=pct(m.comissao,g.comissao);document.getElementById('ccMonthPremium').textContent=fmtMoney(m.premium);document.getElementById('ccMonthPremiumGoal').textContent=fmtMoney(g.premium);document.getElementById('ccMonthPremiumPct').textContent=p+'%';setBar('ccMonthPremiumBar',p);document.getElementById('ccMonthCommission').textContent=fmtMoney(m.comissao);document.getElementById('ccMonthCommissionGoal').textContent=fmtMoney(g.comissao);document.getElementById('ccMonthCommissionPct').textContent=pc+'%';setBar('ccMonthCommissionBar',pc);document.getElementById('ccTargetHeadline').textContent=`VOCÊ ESTÁ ${p}% DA META!`;document.getElementById('ccTargetText').textContent=`Falta(m) ${fmtMoney(Math.max(0,g.premium-m.premium))} para bater a meta mensal.`}
+function renderFullFollowups(){const q=(document.getElementById('fuSearch')?.value||'').toLowerCase();const mode=document.getElementById('fuRange')?.value||'all';const x=followItems();let arr=mode==='all'?[...x.overdue,...x.today,...x.next]:x[mode]||[];arr=arr.filter(c=>!q||[c.nome,c.telefone,c.agente].some(v=>String(v||'').toLowerCase().includes(q)));document.getElementById('fullFollowBody').innerHTML=arr.map(c=>`<tr><td><strong>${c.nome}</strong></td><td>${c.proxContato}</td><td>${(c.status||'').split(' / ')[0]}</td><td>${c.agente||'—'}</td><td>${c.telefone||'—'}</td><td><button class="btn secondary small" onclick="openClientModal('${c.id}')">Abrir</button></td></tr>`).join('')||'<tr><td colspan="6">Nenhum follow-up encontrado.</td></tr>'}
+function renderPolicies(){const q=(document.getElementById('policySearch')?.value||'').toLowerCase();const af=document.getElementById('policyAgentFilter')?.value||'';const arr=STATE.clients.filter(c=>c.status==='Issued / Emitida'&&(!af||c.agente===af)&&(!q||[c.nome,c.numeroApolice,c.companhia,c.agente].some(v=>String(v||'').toLowerCase().includes(q))));document.getElementById('policyBody').innerHTML=arr.map(c=>`<tr><td><strong>${c.nome}</strong></td><td>${c.numeroApolice||'—'}</td><td>${c.companhia||'—'}</td><td>${(c.tipoSeguro||'').split(' / ')[0]}</td><td>${fmtMoney(c.coberturaValor)}</td><td>${fmtMoney(c.premioMensal)}</td><td>${fmtMoney(c.comissao)}</td><td>${c.dataEmissao||'—'}</td><td>${c.agente||'—'}</td></tr>`).join('')||'<tr><td colspan="9">Nenhuma apólice emitida.</td></tr>'}
+function renderReports(){const list=getFilteredClients(),m=metricsFor(list),leads=list.length,issued=m.apolices,conv=leads?Math.round(issued/leads*100):0;document.getElementById('reportSummary').innerHTML=`<div class="report-big">${fmtMoney(m.premium)}</div><div class="report-line"><span>Clientes</span><b>${m.clientes}</b></div><div class="report-line"><span>Apólices emitidas</span><b>${m.apolices}</b></div><div class="report-line"><span>Comissão</span><b>${fmtMoney(m.comissao)}</b></div>`;document.getElementById('reportConversion').innerHTML=`<div class="report-big">${conv}%</div><div class="report-line"><span>Leads / Clientes</span><b>${leads}</b></div><div class="report-line"><span>Emitidas</span><b>${issued}</b></div><div class="report-line"><span>Ticket médio premium</span><b>${fmtMoney(issued?m.premium/issued:0)}</b></div>`;const rows=STATE.agents.map(a=>({a,m:metricsFor(STATE.clients.filter(c=>c.agente===a.nome))})).sort((x,y)=>y.m.comissao-x.m.comissao);document.getElementById('reportAgents').innerHTML=rows.slice(0,8).map((r,i)=>`<div class="report-line"><span>#${i+1} ${r.a.nome}</span><b>${fmtMoney(r.m.comissao)}</b></div>`).join('')}
+
+/* ---------- master render ---------- */
+function renderAll(){
+  populateFilters();
+  const cs = document.getElementById('clientStatusFilter');
+  if(cs){ const prev=cs.value; fillSelect(cs, LISTS.status, 'Status: Todos / All'); if(LISTS.status.includes(prev)) cs.value=prev; }
+  renderKPIs();
+  renderCommandCenter();
+  renderPremiumChart();
+  renderMemberArea();
+  renderClients();
+  renderAgentGoalGrid();
+  renderCommissionChart();
+  renderAgents();
+  renderFullFollowups();
+  renderPolicies();
+  renderReports();
+
+  document.getElementById('btnAddAgent').style.display = SESSION.role==='admin' ? '' : 'none';
+  document.getElementById('btnProfile').style.display = SESSION.role==='agent' ? '' : 'none';
+  const demoBtn = document.getElementById('btnRemoveDemoClients');
+  if(demoBtn){
+    const hasDemo = STATE.clients.some(c=>String(c.id||'').startsWith('demo_'));
+    demoBtn.style.display = (SESSION.role==='admin' && hasDemo) ? '' : 'none';
+  }
+
+  const credCard = document.getElementById('adminCredCard');
+  if(SESSION.role==='admin'){
+    credCard.style.display = '';
+    document.getElementById('admin_usuario').value = STATE.admin.usuario || '';
+    document.getElementById('admin_senha').value = '';
+  } else {
+    credCard.style.display = 'none';
+  }
+}
+
+/* ---------- client modal ---------- */
+const COMMISSION_PCT_OPTIONS = Array.from({length: Math.round((145-30)/5)+1}, (_,i)=> 30 + i*5); // 30%, 35%, ... 145%
+function updateCommissionPreview(){
+  const premio = Number(document.getElementById('cf_premio').value)||0;
+  const pct = Number(document.getElementById('cf_comissaoPct').value)||0;
+  const meses = Number(document.getElementById('cf_comissaoMeses').value)||0;
+  const val = premio * meses * (pct/100);
+  document.getElementById('cf_comissaoPreview').value = fmtMoney(val);
+  return val;
+}
+function openClientModal(id, lockAgent){
+  editingClientId = id || null;
+  memberModalContext = lockAgent || null;
+  fillSelect(document.getElementById('cf_estado'), LISTS.states);
+  fillSelect(document.getElementById('cf_tipo'), LISTS.insuranceTypes);
+  fillSelect(document.getElementById('cf_status'), LISTS.status);
+  fillSelect(document.getElementById('cf_metodo'), LISTS.contactMethods);
+  fillSelect(document.getElementById('cf_agente'), STATE.agents.map(a=>a.nome));
+
+  const c = id ? STATE.clients.find(x=>x.id===id) : null;
+  document.getElementById('clientModalTitle').textContent = id ? 'Editar cliente' : 'Novo cliente';
+  document.getElementById('cf_nome').value = c?.nome || '';
+  document.getElementById('cf_ssn').value = c?.ssn || '';
+  document.getElementById('cf_estado').value = c?.estado || LISTS.states[0];
+  document.getElementById('cf_cidade').value = c?.cidade || '';
+  document.getElementById('cf_telefone').value = c?.telefone || '';
+  document.getElementById('cf_email').value = c?.email || '';
+  document.getElementById('cf_beneficiario').value = c?.beneficiario || '';
+  document.getElementById('cf_parentesco').value = c?.parentesco || '';
+  document.getElementById('cf_tipo').value = c?.tipoSeguro || LISTS.insuranceTypes[0];
+  document.getElementById('cf_companhia').value = c?.companhia || '';
+  document.getElementById('cf_cobertura').value = c?.coberturaValor || '';
+  document.getElementById('cf_premio').value = c?.premioMensal || '';
+  document.getElementById('cf_status').value = c?.status || LISTS.status[0];
+  document.getElementById('cf_metodo').value = c?.metodoContato || LISTS.contactMethods[0];
+  document.getElementById('cf_datacontato').value = c?.dataContato || '';
+  document.getElementById('cf_proxcontato').value = c?.proxContato || '';
+  document.getElementById('cf_resultado').value = c?.resultadoContato || '';
+  document.getElementById('cf_dataaplicacao').value = c?.dataAplicacao || '';
+  document.getElementById('cf_dataemissao').value = c?.dataEmissao || '';
+  document.getElementById('cf_apolice').value = c?.numeroApolice || '';
+  const pctSel = document.getElementById('cf_comissaoPct');
+  pctSel.innerHTML = COMMISSION_PCT_OPTIONS.map(p=>`<option value="${p}">${p}%</option>`).join('');
+  const mesesSel = document.getElementById('cf_comissaoMeses');
+  mesesSel.value = String(c?.comissaoMeses || 9);
+  const existingPremio = c?.premioMensal || 0;
+  let pctToUse = c?.comissaoPct;
+  if(pctToUse==null){
+    const mesesGuess = c?.comissaoMeses || 9;
+    pctToUse = existingPremio>0 && c?.comissao ? Math.round((c.comissao/(existingPremio*mesesGuess)*100)/5)*5 : 30;
+  }
+  pctToUse = Math.min(145, Math.max(30, pctToUse));
+  pctSel.value = String(pctToUse);
+  updateCommissionPreview();
+  const agenteSel = document.getElementById('cf_agente');
+  const lockedAgent = lockAgent || (SESSION.role==='agent' ? SESSION.nome : null);
+  agenteSel.value = c?.agente || lockedAgent || (STATE.agents[0]?.nome || '');
+  agenteSel.disabled = !!lockedAgent;
+  document.getElementById('cf_obs').value = c?.obs || '';
+
+  document.getElementById('clientModalBg').classList.add('open');
+}
+function closeClientModal(){ document.getElementById('clientModalBg').classList.remove('open'); }
+async function saveClientFromModal(){
+  const data = {
+    nome: document.getElementById('cf_nome').value.trim(),
+    ssn: document.getElementById('cf_ssn').value.trim(),
+    estado: document.getElementById('cf_estado').value,
+    cidade: document.getElementById('cf_cidade').value.trim(),
+    telefone: document.getElementById('cf_telefone').value.trim(),
+    email: document.getElementById('cf_email').value.trim(),
+    beneficiario: document.getElementById('cf_beneficiario').value.trim(),
+    parentesco: document.getElementById('cf_parentesco').value.trim(),
+    tipoSeguro: document.getElementById('cf_tipo').value,
+    companhia: document.getElementById('cf_companhia').value.trim(),
+    coberturaValor: Number(document.getElementById('cf_cobertura').value)||0,
+    premioMensal: Number(document.getElementById('cf_premio').value)||0,
+    status: document.getElementById('cf_status').value,
+    metodoContato: document.getElementById('cf_metodo').value,
+    dataContato: document.getElementById('cf_datacontato').value,
+    proxContato: document.getElementById('cf_proxcontato').value,
+    resultadoContato: document.getElementById('cf_resultado').value.trim(),
+    dataAplicacao: document.getElementById('cf_dataaplicacao').value,
+    dataEmissao: document.getElementById('cf_dataemissao').value,
+    numeroApolice: document.getElementById('cf_apolice').value.trim(),
+    comissaoPct: Number(document.getElementById('cf_comissaoPct').value)||30,
+    comissaoMeses: Number(document.getElementById('cf_comissaoMeses').value)||9,
+    comissao: updateCommissionPreview(),
+    agente: document.getElementById('cf_agente').value,
+    obs: document.getElementById('cf_obs').value.trim(),
+  };
+  if(!data.nome){ alert('Informe o nome do cliente.'); return; }
+  if(editingClientId){
+    const idx = STATE.clients.findIndex(c=>c.id===editingClientId);
+    STATE.clients[idx] = {...STATE.clients[idx], ...data};
+  } else {
+    STATE.clients.push({id:cid(), ...data});
+  }
+  await saveState();
+  closeClientModal();
+  renderAll();
+}
+
+/* ---------- agent modal ---------- */
+function openAgentModal(){
+  document.getElementById('af_nome').value='';
+  document.getElementById('af_usuario').value='';
+  document.getElementById('af_senha').value=DEFAULT_PASSWORD;
+  document.getElementById('af_metaclientes').value=40;
+  document.getElementById('af_metaapolices').value=10;
+  document.getElementById('af_metapremio').value=50000;
+  document.getElementById('af_metacomissao').value=10000;
+  document.getElementById('agentModalBg').classList.add('open');
+}
+function closeAgentModal(){ document.getElementById('agentModalBg').classList.remove('open'); }
+async function saveAgentFromModal(){
+  const nome = document.getElementById('af_nome').value.trim();
+  if(!nome){ alert('Informe o nome do agente.'); return; }
+  let usuario = document.getElementById('af_usuario').value.trim() || slugUser(nome);
+  if(STATE.agents.some(a=>a.usuario===usuario) || usuario===STATE.admin.usuario){
+    alert('Este usuário já existe. Escolha outro nome de usuário.'); return;
+  }
+  const senha = document.getElementById('af_senha').value.trim() || DEFAULT_PASSWORD;
+  STATE.agents.push({
+    id:cid(), nome, usuario, senha,
+    metaClientes:Number(document.getElementById('af_metaclientes').value)||0,
+    metaApolices:Number(document.getElementById('af_metaapolices').value)||0,
+    metaPremio:Number(document.getElementById('af_metapremio').value)||0,
+    metaComissao:Number(document.getElementById('af_metacomissao').value)||0,
+    ativo:true
+  });
+  await saveState();
+  closeAgentModal();
+  renderAll();
+}
+
+/* ---------- agent self-service profile (metas + senha) ---------- */
+function openProfileModal(){
+  const me = STATE.agents.find(a=>a.nome===SESSION.nome);
+  if(!me){ alert('Perfil não encontrado.'); return; }
+  document.getElementById('pf_nome_label').textContent = me.nome + ' · ' + (me.usuario||'');
+  document.getElementById('pf_metaclientes').value = me.metaClientes ?? 0;
+  document.getElementById('pf_metaapolices').value = me.metaApolices ?? 0;
+  document.getElementById('pf_metapremio').value = me.metaPremio ?? 0;
+  document.getElementById('pf_metacomissao').value = me.metaComissao ?? 0;
+  document.getElementById('pf_senha').value = '';
+  document.getElementById('profileModalBg').classList.add('open');
+}
+function closeProfileModal(){ document.getElementById('profileModalBg').classList.remove('open'); }
+async function saveProfileFromModal(){
+  const me = STATE.agents.find(a=>a.nome===SESSION.nome);
+  if(!me){ alert('Perfil não encontrado.'); return; }
+  me.metaClientes = Number(document.getElementById('pf_metaclientes').value)||0;
+  me.metaApolices = Number(document.getElementById('pf_metaapolices').value)||0;
+  me.metaPremio = Number(document.getElementById('pf_metapremio').value)||0;
+  me.metaComissao = Number(document.getElementById('pf_metacomissao').value)||0;
+  const novaSenha = document.getElementById('pf_senha').value.trim();
+  if(novaSenha) me.senha = novaSenha;
+  await saveState();
+  closeProfileModal();
+  renderAll();
+}
+
+/* ---------- shared server refresh ---------- */
+let lifeplanRefreshTimer=null;
+function startServerRefresh(){ /* no external server in this build — state lives in local/browser storage, nothing to poll */ }
+/* ---------- login flow ---------- */
+async function showLogin(){
+  const prev = await loadSession();
+  document.getElementById('loginUser').value = prev ? (prev.role==='admin' ? STATE.admin.usuario : (STATE.agents.find(a=>a.nome===prev.nome)?.usuario || '')) : '';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('loginError').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('appShell').classList.remove('active');
+}
+function enterApp(sess){
+  SESSION = sess;
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appShell').classList.add('active');
+  const label = sess.role==='admin' ? 'Administrador' : ('Agente · ' + sess.nome);
+  document.getElementById('sessionLabel').textContent = label;
+  updateDbStatusChip();
+  renderAll();
+  startServerRefresh();
+}
+function updateDbStatusChip(){
+  const dot = document.getElementById('dbStatusDot');
+  const lbl = document.getElementById('dbStatusLabel');
+  const chip = document.getElementById('dbStatusChip');
+  if(!dot||!lbl) return;
+  if(supabaseOnline){
+    dot.style.background = '#3f7c74';
+    lbl.textContent = 'Banco de dados conectado';
+    chip.title = 'Os dados estão salvos no Supabase e acessíveis de qualquer dispositivo.';
+  } else if(supabaseClient){
+    dot.style.background = '#a8442e';
+    lbl.textContent = 'Sem conexão (salvando local)';
+    chip.title = supabaseLastError
+      ? ('Erro de conexão com o Supabase: ' + supabaseLastError)
+      : 'Não foi possível confirmar a conexão com o Supabase ainda.';
+  } else {
+    dot.style.background = '#a8442e';
+    lbl.textContent = 'Somente local';
+    chip.title = 'Configure o Supabase (SUPABASE_URL / SUPABASE_ANON_KEY) para acessar os dados de qualquer dispositivo.';
+  }
+}
+async function attemptLogin(){
+  const usuario = document.getElementById('loginUser').value.trim();
+  const senha = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginError');
+  if(!usuario || !senha){ errEl.textContent='Informe usuário e senha.'; errEl.style.display='block'; return null; }
+  if(usuario === STATE.admin.usuario && senha === STATE.admin.senha){ return {role:'admin'}; }
+  const agent = STATE.agents.find(a=>a.usuario===usuario && a.senha===senha);
+  if(agent){ return {role:'agent', nome:agent.nome}; }
+  errEl.textContent = 'Usuário ou senha inválidos.'; errEl.style.display='block';
+  return null;
+}
+document.getElementById('btnLogin').addEventListener('click', async ()=>{
+  const sess=await attemptLogin(); if(!sess)return; await saveSession(sess); enterApp(sess);
+});
+document.getElementById('loginPass').addEventListener('keydown', (e)=>{
+  if(e.key==='Enter') document.getElementById('btnLogin').click();
+});
+document.getElementById('btnLogout').addEventListener('click', async ()=>{
+  await storageSet(SESSION_KEY, JSON.stringify(null)); SESSION=null; await showLogin();
+});
+
+/* ---------- tabs / wiring ---------- */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-'+btn.dataset.tab).classList.add('active');
+  });
+});
+document.getElementById('filterAgent').addEventListener('change', renderAll);
+document.getElementById('filterMonth').addEventListener('change', renderAll);
+document.getElementById('clientSearch').addEventListener('input', renderClients);
+document.getElementById('sidebarToggle').addEventListener('click', async ()=>{
+  const sb = document.getElementById('sidebar');
+  const collapsed = sb.classList.toggle('collapsed');
+  document.getElementById('sidebarToggle').textContent = collapsed ? '›' : '‹';
+  try{ await storageSet('lifeplan2026_sidebar_collapsed', collapsed ? '1' : '0'); }catch(e){}
+});
+(async function initSidebarState(){
+  try{
+    const saved = await storageGet('lifeplan2026_sidebar_collapsed');
+    if(saved === '1'){
+      document.getElementById('sidebar').classList.add('collapsed');
+      document.getElementById('sidebarToggle').textContent = '›';
+    }
+  }catch(e){}
+})();
+document.getElementById('clientStatusFilter').addEventListener('change', renderClients);
+document.getElementById('memberSelect').addEventListener('change', (e)=>{ e.target.dataset.current = e.target.value; renderMemberArea(); });
+document.getElementById('btnAddClient').addEventListener('click', ()=>openClientModal(null));
+document.getElementById('btnRemoveDemoClients').addEventListener('click', async ()=>{
+  const demoCount = STATE.clients.filter(c=>String(c.id||'').startsWith('demo_')).length;
+  if(!demoCount){ alert('Nenhum cliente fictício encontrado — já está limpo.'); return; }
+  if(!confirm(`Remover os ${demoCount} clientes fictícios de demonstração? Isso não afeta clientes reais.`)) return;
+  STATE.clients = STATE.clients.filter(c=>!String(c.id||'').startsWith('demo_'));
+  await saveState();
+  renderAll();
+  alert('Clientes fictícios removidos.');
+});
+document.getElementById('btnAddClientMember').addEventListener('click', ()=>openClientModal(null, currentMember()));
+document.getElementById('cf_cancel').addEventListener('click', closeClientModal);
+document.getElementById('cf_save').addEventListener('click', saveClientFromModal);
+document.getElementById('cf_premio').addEventListener('input', updateCommissionPreview);
+document.getElementById('cf_comissaoPct').addEventListener('change', updateCommissionPreview);
+document.getElementById('cf_comissaoMeses').addEventListener('change', updateCommissionPreview);
+document.getElementById('btnSaveAdminCred').addEventListener('click', async ()=>{
+  const usuario = document.getElementById('admin_usuario').value.trim();
+  const senha = document.getElementById('admin_senha').value.trim();
+  if(!usuario || !senha){ alert('Usuário e senha não podem ficar vazios.'); return; }
+  if(STATE.agents.some(a=>a.usuario===usuario)){ alert('Este usuário já pertence a um agente.'); return; }
+  STATE.admin = {usuario, senha};
+  await saveState();
+  alert('Credenciais do administrador atualizadas.');
+});
+document.getElementById('btnAddAgent').addEventListener('click', openAgentModal);
+document.getElementById('af_cancel').addEventListener('click', closeAgentModal);
+document.getElementById('af_save').addEventListener('click', saveAgentFromModal);
+document.getElementById('btnProfile').addEventListener('click', openProfileModal);
+document.getElementById('pf_cancel').addEventListener('click', closeProfileModal);
+document.getElementById('pf_save').addEventListener('click', saveProfileFromModal);
+document.getElementById('profileModalBg').addEventListener('click', (e)=>{ if(e.target===e.currentTarget) closeProfileModal(); });
+document.getElementById('clientModalBg').addEventListener('click', (e)=>{ if(e.target===e.currentTarget) closeClientModal(); });
+document.getElementById('agentModalBg').addEventListener('click', (e)=>{ if(e.target===e.currentTarget) closeAgentModal(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeClientModal(); closeAgentModal(); } });
+
+
+document.getElementById('fuSearch')?.addEventListener('input',renderFullFollowups);
+document.getElementById('fuRange')?.addEventListener('change',renderFullFollowups);
+document.getElementById('policySearch')?.addEventListener('input',renderPolicies);
+document.getElementById('policyAgentFilter')?.addEventListener('change',renderPolicies);
+document.getElementById('ccViewRanking')?.addEventListener('click',()=>document.querySelector('[data-tab="metas"]').click());
+document.getElementById('ccViewFollowups')?.addEventListener('click',()=>document.querySelector('[data-tab="followups"]').click());
+document.getElementById('ccViewGoals')?.addEventListener('click',()=>document.querySelector('[data-tab="metas"]').click());
+document.querySelectorAll('[data-fut]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-fut]').forEach(x=>x.classList.remove('active'));b.classList.add('active');ccFollowMode=b.dataset.fut;renderCommandFollowups();}));
+
+(async function init(){
+  await loadState();
+  await showLogin();
+})();
+</script>
+
+
+<style id="lifeplan-v9-css">
+.v9-shell{margin-top:18px}
+.v9-nav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+.v9-nav button{border:1px solid rgba(77,151,226,.22);background:#071c31;color:#dcecff;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:700}
+.v9-nav button.active{background:linear-gradient(135deg,#1683ff,#0b5ed7);color:#fff}
+.v9-view{display:none}.v9-view.active{display:block}
+.v9-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.v9-stat{background:linear-gradient(145deg,#071c31,#09243e);border:1px solid rgba(91,155,214,.18);border-radius:16px;padding:16px;box-shadow:0 12px 30px rgba(0,0,0,.18)}
+.v9-stat span{display:block;color:#8ea6c1;font-size:11px;text-transform:uppercase;letter-spacing:.08em}.v9-stat strong{display:block;color:#fff;font-size:28px;margin-top:7px}
+.v9-board{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;overflow:auto}
+.v9-stage{min-width:180px;background:#06172a;border:1px solid rgba(91,155,214,.16);border-radius:14px;padding:10px}
+.v9-stage h4{color:#fff!important;margin:2px 0 10px;font-size:12px}
+.v9-count{color:#6fb4ff;font-weight:800}
+.v9-lead{background:#09243e;border:1px solid rgba(91,155,214,.16);border-radius:12px;padding:11px;margin-bottom:8px;cursor:pointer}
+.v9-lead strong{color:#fff;display:block}.v9-lead small{color:#8ea6c1;display:block;margin-top:4px}
+.v9-toolbar{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.v9-toolbar input,.v9-toolbar select{padding:10px;border-radius:10px;border:1px solid #23496b;background:#06172a;color:#fff}
+.v9-table{width:100%;border-collapse:collapse}.v9-table th,.v9-table td{padding:11px;border-bottom:1px solid rgba(91,155,214,.12);text-align:left}.v9-table th{color:#8ea6c1;font-size:11px;text-transform:uppercase}.v9-table td{color:#e7f2ff}
+.v9-pill{display:inline-block;padding:5px 9px;border-radius:999px;background:#123452;color:#b9dcff;font-size:11px;font-weight:700}
+.v9-card{background:#071c31;border:1px solid rgba(91,155,214,.18);border-radius:16px;padding:16px;margin-bottom:14px}
+.v9-two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.v9-empty{padding:28px;text-align:center;color:#8ea6c1}
+.v9-modal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;z-index:9999;padding:18px}
+.v9-modal.show{display:flex}.v9-modal-box{max-width:720px;width:100%;max-height:90vh;overflow:auto;background:#071c31;border:1px solid rgba(91,155,214,.25);border-radius:18px;padding:20px;color:#fff}
+.v9-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}.v9-form label{font-size:11px;color:#8ea6c1}.v9-form input,.v9-form select,.v9-form textarea{width:100%;box-sizing:border-box;margin-top:4px;padding:10px;border-radius:9px;border:1px solid #23496b;background:#06172a;color:#fff}.v9-form textarea{min-height:80px;grid-column:1/-1}
+.v9-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.v9-btn{padding:10px 14px;border:0;border-radius:10px;background:linear-gradient(135deg,#1683ff,#0b5ed7);color:#fff;font-weight:800;cursor:pointer}.v9-btn.secondary{background:#123452}
+@media(max-width:1100px){.v9-grid{grid-template-columns:repeat(2,1fr)}.v9-board{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:700px){.v9-grid,.v9-two,.v9-form{grid-template-columns:1fr}.v9-board{grid-template-columns:1fr}.v9-stage{min-width:0}}
+</style>
+
+<div class="v9-shell" id="v9Shell">
+  <div class="v9-nav">
+    <button class="active" data-v9tab="overview">🚀 V9 Command</button>
+    <button data-v9tab="pipeline">🔥 Pipeline</button>
+    <button data-v9tab="carriers">🏢 Provedores</button>
+    <button data-v9tab="policies">📄 Apólices</button>
+    <button data-v9tab="commissions">💰 Comissões</button>
+    <button data-v9tab="activities">📅 Atividades</button>
+  </div>
+
+  <section class="v9-view active" id="v9-overview">
+    <div class="v9-grid">
+      <div class="v9-stat"><span>Pipeline</span><strong id="v9PipelineValue">$0</strong></div>
+      <div class="v9-stat"><span>Aplicações</span><strong id="v9Applications">0</strong></div>
+      <div class="v9-stat"><span>Emitidas</span><strong id="v9Issued">0</strong></div>
+      <div class="v9-stat"><span>Comissão prevista</span><strong id="v9Commission">$0</strong></div>
+    </div>
+    <div class="v9-two" style="margin-top:14px">
+      <div class="v9-card"><h2>🔥 Ações prioritárias</h2><div id="v9Priorities"></div></div>
+      <div class="v9-card"><h2>📈 Conversão</h2><div id="v9Conversion"></div></div>
+    </div>
+  </section>
+
+  <section class="v9-view" id="v9-pipeline">
+    <div class="v9-card">
+      <div class="v9-toolbar"><input id="v9PipeSearch" placeholder="Buscar cliente..."><button class="v9-btn" id="v9DemoBtn">+ Carregar 30 clientes demo</button></div>
+      <div class="v9-board" id="v9Board"></div>
+    </div>
+  </section>
+
+  <section class="v9-view" id="v9-carriers">
+    <div class="v9-card">
+      <div class="v9-toolbar"><h2 style="margin-right:auto">🏢 Provedores / Carriers</h2><button class="v9-btn" id="v9AddCarrier">+ Provedor</button></div>
+      <div class="v9-table-wrap"><table class="v9-table"><thead><tr><th>Provedor</th><th>Produtos</th><th>Estados</th><th>Comissão</th><th>Status</th></tr></thead><tbody id="v9CarrierBody"></tbody></table></div>
+    </div>
+  </section>
+
+  <section class="v9-view" id="v9-policies">
+    <div class="v9-card">
+      <div class="v9-toolbar"><h2 style="margin-right:auto">📄 Apólices</h2><input id="v9PolicySearch" placeholder="Cliente, apólice ou carrier..."></div>
+      <div class="v9-table-wrap"><table class="v9-table"><thead><tr><th>Cliente</th><th>Apólice</th><th>Carrier</th><th>Produto</th><th>Premium</th><th>Comissão</th><th>Agente</th></tr></thead><tbody id="v9PolicyBody"></tbody></table></div>
+    </div>
+  </section>
+
+  <section class="v9-view" id="v9-commissions">
+    <div class="v9-grid">
+      <div class="v9-stat"><span>Prevista</span><strong id="v9CommExpected">$0</strong></div>
+      <div class="v9-stat"><span>Emitida</span><strong id="v9CommIssued">$0</strong></div>
+      <div class="v9-stat"><span>Pendente</span><strong id="v9CommPending">$0</strong></div>
+      <div class="v9-stat"><span>Ticket médio</span><strong id="v9AvgPremium">$0</strong></div>
+    </div>
+    <div class="v9-card" style="margin-top:14px"><h2>💰 Produção por agente</h2><div id="v9AgentCommissions"></div></div>
+  </section>
+
+  <section class="v9-view" id="v9-activities">
+    <div class="v9-card">
+      <div class="v9-toolbar"><h2 style="margin-right:auto">📅 Agenda comercial</h2><input id="v9ActivitySearch" placeholder="Buscar cliente ou agente..."></div>
+      <div class="v9-table-wrap"><table class="v9-table"><thead><tr><th>Cliente</th><th>Data</th><th>Status</th><th>Agente</th><th>Ação</th></tr></thead><tbody id="v9ActivityBody"></tbody></table></div>
+    </div>
+  </section>
+</div>
+
+<div class="v9-modal" id="v9Modal">
+  <div class="v9-modal-box">
+    <h2 id="v9ModalTitle">Provedor</h2>
+    <div class="v9-form">
+      <label>Nome<input id="v9CarrierName"></label>
+      <label>Comissão padrão %<input id="v9CarrierRate" type="number" value="100"></label>
+      <label>Produtos<input id="v9CarrierProducts" placeholder="Term, IUL, Whole Life"></label>
+      <label>Estados<input id="v9CarrierStates" placeholder="MA, CT, RI"></label>
+      <label style="grid-column:1/-1">Observações<textarea id="v9CarrierNotes"></textarea></label>
+    </div>
+    <div class="v9-actions"><button class="v9-btn secondary" id="v9CloseModal">Cancelar</button><button class="v9-btn" id="v9SaveCarrier">Salvar</button></div>
+  </div>
+</div>
+
+<script id="lifeplan-v9-engine">
+(function(){
+  const demoClients = [
+    ["Maria Oliveira","Worcester","MA","508-555-0101","Term Life","North American",250000,75,"Quoted"],
+    ["John Anderson","Framingham","MA","508-555-0102","Whole Life","Mutual of America",150000,92,"Follow-up"],
+    ["Patricia Santos","Hudson","MA","978-555-0103","IUL","National Life",300000,135,"Contacted"],
+    ["Michael Brown","Marlborough","MA","508-555-0104","Term Life","Lincoln Financial",500000,118,"Application"],
+    ["Ana Pereira","Acton","MA","978-555-0105","Final Expense","Foresters Financial",30000,48,"Approved"],
+    ["David Miller","Shrewsbury","MA","508-555-0106","Mortgage Protection","Americo",200000,68,"New Lead"],
+    ["Carla Mendes","Leominster","MA","978-555-0107","Whole Life","Transamerica",100000,81,"Issued"],
+    ["Robert Wilson","Westborough","MA","508-555-0108","Universal Life","John Hancock",250000,110,"Quoted"],
+    ["Juliana Rocha","Ashland","MA","508-555-0109","IUL","National Life",400000,165,"Follow-up"],
+    ["Thomas Davis","Northborough","MA","508-555-0110","Term Life","Lincoln Financial",350000,88,"Contacted"],
+    ["Fernanda Costa","Southborough","MA","508-555-0111","Whole Life","Mutual of America",200000,105,"Application"],
+    ["James Taylor","Milford","MA","508-555-0112","Term Life","North American",750000,142,"Issued"],
+    ["Beatriz Almeida","Sharon","MA","781-555-0113","Final Expense","Foresters Financial",25000,42,"New Lead"],
+    ["Daniel Moore","Natick","MA","508-555-0114","Universal Life","John Hancock",300000,126,"Quoted"],
+    ["Camila Ferreira","Medway","MA","508-555-0115","IUL","National Life",500000,205,"Approved"],
+    ["Christopher Martin","Grafton","MA","508-555-0116","Term Life","Lincoln Financial",400000,101,"Follow-up"],
+    ["Renata Silva","Bellingham","MA","508-555-0117","Whole Life","Transamerica",125000,87,"Contacted"],
+    ["Matthew Thompson","Hopkinton","MA","508-555-0118","Mortgage Protection","Americo",275000,79,"Quoted"],
+    ["Larissa Souza","Franklin","MA","508-555-0119","Term Life","North American",600000,128,"Application"],
+    ["Anthony White","Millis","MA","508-555-0120","Whole Life","Mutual of America",175000,96,"Issued"],
+    ["Sofia Martins","Dover","MA","508-555-0121","Final Expense","Foresters Financial",40000,55,"New Lead"],
+    ["Kevin Harris","Medfield","MA","508-555-0122","Universal Life","John Hancock",225000,99,"Follow-up"],
+    ["Mariana Lopes","Wayland","MA","508-555-0123","IUL","National Life",350000,148,"Quoted"],
+    ["Steven Clark","Sudbury","MA","508-555-0124","Term Life","Lincoln Financial",500000,122,"Approved"],
+    ["Isabela Nunes","Concord","MA","978-555-0125","Whole Life","Transamerica",180000,94,"Contacted"],
+    ["Brian Lewis","Littleton","MA","978-555-0126","Mortgage Protection","Americo",225000,73,"Follow-up"],
+    ["Paula Ribeiro","Maynard","MA","978-555-0127","Term Life","North American",450000,107,"Application"],
+    ["Eric Walker","Clinton","MA","978-555-0128","Universal Life","John Hancock",275000,114,"Quoted"],
+    ["Tatiana Dias","Bolton","MA","978-555-0129","IUL","National Life",325000,139,"Issued"],
+    ["Andrew Hall","Berlin","MA","978-555-0130","Whole Life","Mutual of America",125000,82,"New Lead"]
+  ];
+
+  let carriers = JSON.parse(localStorage.getItem("lifeplan_v9_carriers") || "null") || [
+    {name:"North American",products:"Term, IUL",states:"MA, CT, RI",rate:100,status:"Ativo"},
+    {name:"National Life",products:"IUL, Whole Life",states:"MA, CT, RI, NH",rate:110,status:"Ativo"},
+    {name:"Lincoln Financial",products:"Term, UL",states:"MA, CT, NH",rate:90,status:"Ativo"},
+    {name:"Mutual of America",products:"Whole Life, Term",states:"MA, CT",rate:95,status:"Ativo"},
+    {name:"Foresters Financial",products:"Final Expense, Whole Life",states:"MA, CT, RI",rate:85,status:"Ativo"},
+    {name:"Americo",products:"Mortgage Protection, Final Expense",states:"MA, CT, RI",rate:80,status:"Ativo"},
+    {name:"Transamerica",products:"Whole Life, Term, IUL",states:"MA, CT, NH",rate:100,status:"Ativo"},
+    {name:"John Hancock",products:"Universal Life, IUL",states:"MA, CT, RI, NH",rate:105,status:"Ativo"}
+  ];
+
+  function normStatus(s){
+    const x=String(s||"").toLowerCase();
+    if(x.includes("new")||x.includes("novo")) return "New Lead";
+    if(x.includes("contact")) return "Contacted";
+    if(x.includes("follow")||x.includes("acompan")) return "Follow-up";
+    if(x.includes("quote")||x.includes("cota")) return "Quoted";
+    if(x.includes("application")||x.includes("aplica")) return "Application";
+    if(x.includes("approved")||x.includes("aprov")) return "Approved";
+    if(x.includes("issued")||x.includes("emit")) return "Issued";
+    if(x.includes("declined")||x.includes("recus")) return "Declined";
+    return s||"New Lead";
+  }
+  function getClients(){ return Array.isArray(window.STATE?.clients) ? window.STATE.clients : []; }
+  function premium(c){ return Number(c.premioMensal||c.monthly_premium||0)*12; }
+  function commission(c){ return Number(c.comissao||c.commission_amount||0) || Number(c.premioMensal||0)*9*(Number(c.comissaoPct||100)/100); }
+  function fmt(n){return new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}).format(Number(n)||0)}
+  function visibleClients(){
+    const q=(document.getElementById("v9PipeSearch")?.value||"").toLowerCase();
+    return getClients().filter(c=>!q||[c.nome,c.telefone,c.agente,c.companhia].some(v=>String(v||"").toLowerCase().includes(q)));
+  }
+
+  function renderOverview(){
+    const cs=getClients();
+    const issued=cs.filter(c=>normStatus(c.status)==="Issued");
+    const apps=cs.filter(c=>["Application","Approved"].includes(normStatus(c.status)));
+    const pipeline=cs.filter(c=>!["Issued","Declined","Lost","Not Interested","Not Qualified"].includes(normStatus(c.status)));
+    const pv=pipeline.reduce((s,c)=>s+premium(c),0);
+    const cm=cs.reduce((s,c)=>s+commission(c),0);
+    document.getElementById("v9PipelineValue").textContent=fmt(pv);
+    document.getElementById("v9Applications").textContent=apps.length;
+    document.getElementById("v9Issued").textContent=issued.length;
+    document.getElementById("v9Commission").textContent=fmt(cm);
+    const priorities=cs.filter(c=>["Follow-up","Quoted","Application"].includes(normStatus(c.status))).slice(0,8);
+    document.getElementById("v9Priorities").innerHTML=priorities.length?priorities.map(c=>`<div class="v9-lead"><strong>${c.nome}</strong><small>${normStatus(c.status)} • ${c.proxContato||"sem data"} • ${c.agente||"Sem agente"}</small></div>`).join(""):'<div class="v9-empty">Nenhuma ação prioritária.</div>';
+    const total=cs.length;
+    document.getElementById("v9Conversion").innerHTML=`<div class="v9-stat"><span>Lead → Emitida</span><strong>${total?Math.round(issued.length/total*100):0}%</strong></div>
+      <div style="margin-top:12px;color:#8ea6c1">Contatados: <b style="color:#fff">${cs.filter(c=>normStatus(c.status)==="Contacted").length}</b> · Cotações: <b style="color:#fff">${cs.filter(c=>normStatus(c.status)==="Quoted").length}</b> · Aplicações: <b style="color:#fff">${apps.length}</b></div>`;
+  }
+
+  function renderPipeline(){
+    const stages=["New Lead","Contacted","Quoted","Application","Approved","Issued"];
+    const cs=visibleClients();
+    document.getElementById("v9Board").innerHTML=stages.map(stage=>{
+      const arr=cs.filter(c=>normStatus(c.status)===stage);
+      return `<div class="v9-stage"><h4>${stage} <span class="v9-count">${arr.length}</span></h4>${arr.map(c=>`<div class="v9-lead" data-client="${c.id||""}"><strong>${c.nome||"Cliente"}</strong><small>${fmt(c.premioMensal||0)}/mês • ${c.companhia||"—"}</small></div>`).join("")||'<div class="v9-empty">Vazio</div>'}</div>`;
+    }).join("");
+  }
+
+  function renderCarriers(){
+    document.getElementById("v9CarrierBody").innerHTML=carriers.map((c,i)=>`<tr><td><strong>${c.name}</strong></td><td>${c.products}</td><td>${c.states}</td><td>${c.rate}%</td><td><span class="v9-pill">${c.status}</span></td></tr>`).join("");
+    localStorage.setItem("lifeplan_v9_carriers",JSON.stringify(carriers));
+  }
+
+  function renderPolicies(){
+    const q=(document.getElementById("v9PolicySearch")?.value||"").toLowerCase();
+    const arr=getClients().filter(c=>normStatus(c.status)==="Issued" && (!q||[c.nome,c.numeroApolice,c.companhia,c.agente].some(v=>String(v||"").toLowerCase().includes(q))));
+    document.getElementById("v9PolicyBody").innerHTML=arr.map(c=>`<tr><td>${c.nome}</td><td>${c.numeroApolice||"DEMO-"+String(c.id||"").slice(-4)}</td><td>${c.companhia||"—"}</td><td>${c.tipoSeguro||"—"}</td><td>${fmt(c.premioMensal||0)}</td><td>${fmt(commission(c))}</td><td>${c.agente||"—"}</td></tr>`).join("")||'<tr><td colspan="7" class="v9-empty">Nenhuma apólice emitida.</td></tr>';
+  }
+
+  function renderCommissions(){
+    const cs=getClients();
+    const expected=cs.reduce((s,c)=>s+commission(c),0);
+    const issued=cs.filter(c=>normStatus(c.status)==="Issued").reduce((s,c)=>s+commission(c),0);
+    const pending=Math.max(0,expected-issued);
+    const issuedCs=cs.filter(c=>normStatus(c.status)==="Issued");
+    document.getElementById("v9CommExpected").textContent=fmt(expected);
+    document.getElementById("v9CommIssued").textContent=fmt(issued);
+    document.getElementById("v9CommPending").textContent=fmt(pending);
+    document.getElementById("v9AvgPremium").textContent=fmt(issuedCs.length?issuedCs.reduce((s,c)=>s+premium(c),0)/issuedCs.length:0);
+    const by={};
+    cs.forEach(c=>{const a=c.agente||"Sem agente";by[a]=(by[a]||0)+commission(c)});
+    document.getElementById("v9AgentCommissions").innerHTML=Object.entries(by).sort((a,b)=>b[1]-a[1]).map(([a,v],i)=>`<div class="report-line"><span>#${i+1} ${a}</span><b>${fmt(v)}</b></div>`).join("")||'<div class="v9-empty">Sem produção.</div>';
+  }
+
+  function renderActivities(){
+    const q=(document.getElementById("v9ActivitySearch")?.value||"").toLowerCase();
+    const arr=getClients().filter(c=>c.proxContato && (!q||[c.nome,c.agente].some(v=>String(v||"").toLowerCase().includes(q)))).sort((a,b)=>String(a.proxContato).localeCompare(String(b.proxContato)));
+    document.getElementById("v9ActivityBody").innerHTML=arr.slice(0,100).map(c=>`<tr><td>${c.nome}</td><td>${c.proxContato}</td><td><span class="v9-pill">${normStatus(c.status)}</span></td><td>${c.agente||"—"}</td><td><button class="v9-btn secondary" data-open-client="${c.id||""}">Abrir</button></td></tr>`).join("")||'<tr><td colspan="5" class="v9-empty">Nenhuma atividade encontrada.</td></tr>';
+  }
+
+  function renderAllV9(){renderOverview();renderPipeline();renderCarriers();renderPolicies();renderCommissions();renderActivities();}
+
+  function seedDemo(){
+    if(!window.STATE) return;
+    if(getClients().length){ alert("A base já possui clientes. Os 30 clientes demo não foram adicionados para evitar duplicação."); return; }
+    const agent=(window.STATE.agents||[])[0]||{};
+    const today=new Date();
+    window.STATE.clients=demoClients.map((d,i)=>{
+      const dt=new Date(today);dt.setDate(today.getDate()-(i%14));
+      const nx=new Date(today);nx.setDate(today.getDate()+((i%9)-3));
+      return {id:"demo_"+String(i+1).padStart(2,"0"),nome:d[0],cidade:d[1],estado:d[2],telefone:d[3],
+        email:d[0].toLowerCase().replace(/ /g,".")+".demo@example.com",tipoSeguro:d[4],companhia:d[5],
+        coberturaValor:d[6],premioMensal:d[7],status:d[8],dataContato:dt.toISOString().slice(0,10),
+        proxContato:nx.toISOString().slice(0,10),metodoContato:i%2?"Phone":"Text",agente:agent.nome||"Demo Agent",
+        agenteId:agent.id||"",comissaoPct:100,comissao:d[7]*9,numeroApolice:normStatus(d[8])==="Issued"?"DEMO-"+(10000+i):"",
+        obs:"CLIENTE FICTÍCIO — dados de demonstração."};
+    });
+    try{ if(typeof saveState==="function") saveState(); }catch(e){}
+    renderAllV9();
+    alert("30 clientes fictícios carregados para demonstração.");
+  }
+
+  function switchV9(tab){
+    document.querySelectorAll("[data-v9tab]").forEach(b=>b.classList.toggle("active",b.dataset.v9tab===tab));
+    document.querySelectorAll(".v9-view").forEach(v=>v.classList.remove("active"));
+    document.getElementById("v9-"+tab)?.classList.add("active");
+  }
+
+  document.addEventListener("click",e=>{
+    const b=e.target.closest("[data-v9tab]"); if(b){switchV9(b.dataset.v9tab);renderAllV9();return;}
+    if(e.target.id==="v9DemoBtn") seedDemo();
+    if(e.target.id==="v9AddCarrier"){document.getElementById("v9Modal").classList.add("show");}
+    if(e.target.id==="v9CloseModal"){document.getElementById("v9Modal").classList.remove("show");}
+    if(e.target.id==="v9SaveCarrier"){
+      const name=document.getElementById("v9CarrierName").value.trim(); if(!name){alert("Informe o nome do provedor.");return;}
+      carriers.push({name,rate:Number(document.getElementById("v9CarrierRate").value)||0,products:document.getElementById("v9CarrierProducts").value||"—",states:document.getElementById("v9CarrierStates").value||"—",status:"Ativo"});
+      document.getElementById("v9Modal").classList.remove("show");renderCarriers();
+    }
+  });
+  ["v9PipeSearch","v9PolicySearch","v9ActivitySearch"].forEach(id=>document.getElementById(id)?.addEventListener("input",renderAllV9));
+
+  window.LIFEPLAN_V9={version:"9.0",render:renderAllV9,seedDemo};
+  setTimeout(renderAllV9,250);
+})();
+</script>
+
+<script id="lifeplan-blue-enhancements">
+document.addEventListener('DOMContentLoaded',function(){
+  document.body.classList.add('lifeplan-blue-v4');
+  document.querySelectorAll('button').forEach(function(b){
+    if(!b.getAttribute('aria-label') && b.textContent.trim())
+      b.setAttribute('title',b.textContent.trim());
+  });
+});
+</script>
+
+
+<script id="lifeplan-command-center-enhancements">
+(function(){
+  function personalize(){
+    var label=document.getElementById('sessionLabel');
+    var h=document.querySelector('.brand h1');
+    var tag=document.querySelector('.brand .tag');
+    if(label && h){
+      var t=(label.textContent||'').trim();
+      if(t && t!=='—') h.textContent='Bem-vindo, '+t+' 👋';
+      if(tag) tag.textContent='Aqui está o seu desempenho de hoje  /  Your performance today';
+    }
+  }
+  document.addEventListener('DOMContentLoaded',function(){
+    personalize();
+    var target=document.getElementById('sessionLabel');
+    if(target) new MutationObserver(personalize).observe(target,{childList:true,subtree:true,characterData:true});
+  });
+})();
+</script>
+</body>
+</html>
