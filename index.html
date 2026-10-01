@@ -1343,7 +1343,11 @@ function populateMemberSelect(){
     sel.disabled = true;
   } else {
     sel.disabled = false;
-    if(!Array.from(sel.options).some(o=>o.value===sel.dataset.current)){
+    const filterName = document.getElementById('filterAgent')?.value || '';
+    if(filterName && STATE.agents.some(a=>a.nome===filterName)){
+      sel.value = filterName;
+      sel.dataset.current = filterName;
+    } else if(!Array.from(sel.options).some(o=>o.value===sel.dataset.current)){
       sel.value = STATE.agents[0]?.nome || '';
     } else {
       sel.value = sel.dataset.current;
