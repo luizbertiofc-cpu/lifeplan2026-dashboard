@@ -176,6 +176,8 @@
   .btn.danger{background:var(--brick);}
   .btn.small{padding:5px 10px;font-size:11.5px;border-radius:7px;}
   .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .pct-edit{background:none;border:none;cursor:pointer;font:inherit;color:inherit;opacity:.6;text-decoration:underline dotted;padding:2px 4px;}
+  .pct-edit.has-val{opacity:1;text-decoration:none;font-weight:700;}
 
   .table-wrap{overflow-x:auto;}
   input[type=text], input[type=number], input[type=date], select.cell{
@@ -1490,7 +1492,22 @@ function renderCompTable(){
   const tb = document.getElementById('compTableBody');
   if(!tb) return;
   const rows = STATE.compTable || [];
-  tb.innerHTML = rows.map(r=>`<tr><td><strong>${r.companhia||'—'}</strong></td><td>${r.produto||'—'}</td><td class="num">${r.pct==null?'—':r.pct+'%'}</td><td style="white-space:nowrap;"><button class="btn danger small" data-ctdel="${r.id}">Excluir</button></td></tr>`).join('') || '<tr><td colspan="4">Nenhuma linha. Adicione abaixo.</td></tr>';
+  tb.innerHTML = rows.map(r=>{
+    const pctCell = r.pct==null
+      ? `<button class="pct-edit" data-ctedit="${r.id}" title="Clique para definir o %">— definir</button>`
+      : `<button class="pct-edit has-val" data-ctedit="${r.id}" title="Clique para alterar o %">${r.pct}%</button>`;
+    return `<tr><td><strong>${r.companhia||'—'}</strong></td><td>${r.produto||'—'}</td><td class="num">${pctCell}</td><td style="white-space:nowrap;"><button class="btn danger small" data-ctdel="${r.id}">Excluir</button></td></tr>`;
+  }).join('') || '<tr><td colspan="4">Nenhuma linha. Adicione abaixo.</td></tr>';
+  tb.querySelectorAll('[data-ctedit]').forEach(b=> b.addEventListener('click', async ()=>{
+    const r = (STATE.compTable||[]).find(x=>x.id===b.dataset.ctedit);
+    if(!r) return;
+    const v = prompt(`% da companhia para ${r.companhia} — ${r.produto}:`, r.pct==null?'':r.pct);
+    if(v===null) return;
+    const pct = Number(String(v).replace('%','').replace(',','.').trim());
+    if(!pct || pct<=0 || pct>300){ alert('Informe um % válido (ex: 95).'); return; }
+    r.pct = pct;
+    await saveState(); renderCompTable();
+  }));
   tb.querySelectorAll('[data-ctdel]').forEach(b=> b.addEventListener('click', async ()=>{
     if(confirm('Excluir esta linha da tabela?')){
       STATE.compTable = STATE.compTable.filter(x=>x.id!==b.dataset.ctdel);
