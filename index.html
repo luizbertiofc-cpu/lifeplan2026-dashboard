@@ -1163,6 +1163,21 @@ async function loadState(){
       {id:'ct1', companhia:'Mutual of Omaha', produto:'IUL', pct:95},
       {id:'ct2', companhia:'Americo', produto:'IUL', pct:80},
       {id:'ct3', companhia:'Transamerica', produto:'Term', pct:105},
+      {id:'ct4', companhia:'Mutual of Omaha', produto:'Term', pct:null},
+      {id:'ct5', companhia:'Mutual of Omaha', produto:'Whole Life', pct:null},
+      {id:'ct6', companhia:'Americo', produto:'Term', pct:null},
+      {id:'ct7', companhia:'Transamerica', produto:'IUL', pct:null},
+      {id:'ct8', companhia:'AIG', produto:'Term', pct:null},
+      {id:'ct9', companhia:'AIG', produto:'Whole Life', pct:null},
+      {id:'ct10', companhia:'AIG', produto:'Accidental', pct:null},
+      {id:'ct11', companhia:'Foresters', produto:'Whole Life', pct:null},
+      {id:'ct12', companhia:'American Amicable', produto:'Whole Life', pct:null},
+      {id:'ct13', companhia:'John Hancock', produto:'Term', pct:null},
+      {id:'ct14', companhia:'John Hancock', produto:'IUL', pct:null},
+      {id:'ct15', companhia:'Aetna', produto:'Accidental', pct:null},
+      {id:'ct16', companhia:'Global Atlantic', produto:'Annuity', pct:null},
+      {id:'ct17', companhia:'Athene', produto:'Annuity', pct:null},
+      {id:'ct18', companhia:'CFG', produto:'Term', pct:null},
     ];
     migrated = true;
   }
@@ -1471,7 +1486,7 @@ function renderCompTable(){
   const tb = document.getElementById('compTableBody');
   if(!tb) return;
   const rows = STATE.compTable || [];
-  tb.innerHTML = rows.map(r=>`<tr><td><strong>${r.companhia||'—'}</strong></td><td>${r.produto||'—'}</td><td class="num">${r.pct}%</td><td style="white-space:nowrap;"><button class="btn danger small" data-ctdel="${r.id}">Excluir</button></td></tr>`).join('') || '<tr><td colspan="4">Nenhuma linha. Adicione abaixo.</td></tr>';
+  tb.innerHTML = rows.map(r=>`<tr><td><strong>${r.companhia||'—'}</strong></td><td>${r.produto||'—'}</td><td class="num">${r.pct==null?'—':r.pct+'%'}</td><td style="white-space:nowrap;"><button class="btn danger small" data-ctdel="${r.id}">Excluir</button></td></tr>`).join('') || '<tr><td colspan="4">Nenhuma linha. Adicione abaixo.</td></tr>';
   tb.querySelectorAll('[data-ctdel]').forEach(b=> b.addEventListener('click', async ()=>{
     if(confirm('Excluir esta linha da tabela?')){
       STATE.compTable = STATE.compTable.filter(x=>x.id!==b.dataset.ctdel);
