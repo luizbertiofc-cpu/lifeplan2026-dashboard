@@ -1442,7 +1442,11 @@ function renderMemberArea(){
 function renderClients(){
   const tbody = document.getElementById('clientBody');
   tbody.innerHTML = '';
-  const base = SESSION.role==='agent' ? STATE.clients.filter(c=>c.agente===SESSION.nome) : STATE.clients;
+  const base = SESSION.role==='agent'
+    ? STATE.clients.filter(c=>c.agente===SESSION.nome)
+    : ((document.getElementById('filterAgent')?.value || '')
+        ? STATE.clients.filter(c=>c.agente===document.getElementById('filterAgent').value)
+        : STATE.clients);
   const q = (document.getElementById('clientSearch')?.value || '').trim().toLowerCase();
   const sf = document.getElementById('clientStatusFilter')?.value || '';
   const list = base.filter(c=>{
